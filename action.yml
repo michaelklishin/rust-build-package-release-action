@@ -8,7 +8,7 @@ branding:
 
 inputs:
   command:
-    description: 'Command: extract-changelog, validate-version, get-version, release-linux, release-macos, release-windows'
+    description: 'Command: extract-changelog, validate-version, get-version, release-linux, release-macos, release-windows, release-windows-msi'
     required: true
 
   version:
@@ -87,7 +87,7 @@ runs:
     - name: Setup Nu shell
       uses: hustcer/setup-nu@56361e0eb7e0e93e97d4925f1ed07d767615f0b1 # v3.17
       with:
-        version: '0.102.0'
+        version: '0.110.0'
 
     - name: Run command
       id: run
@@ -137,8 +137,16 @@ runs:
                 if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
                 nu $"($scripts)/release-windows.nu"
             }
+            "release-windows-msi" => {
+                if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
+                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                nu $"($scripts)/release-windows-msi.nu"
+            }
             _ => {
-                print $"error: unknown command '${{ inputs.command }}'"
+                print $"(ansi red)ERROR:(ansi reset) unknown command '${{ inputs.command }}'"
                 exit 1
             }
         }

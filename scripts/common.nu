@@ -1,10 +1,10 @@
 #!/usr/bin/env nu
 
-# Reads Cargo.toml once and returns [name, version]
+# Reads Cargo.toml and returns package name and version
 export def get-cargo-info []: nothing -> record<name: string, version: string> {
     let cargo = open Cargo.toml
-    let name = $cargo | get -i package.name | default ""
-    let version = $cargo | get -i package.version | default ($cargo | get -i workspace.package.version | default "")
+    let name = $cargo | get -o package.name | default ""
+    let version = $cargo | get -o package.version | default ($cargo | get -o workspace.package.version | default "")
     { name: $name, version: $version }
 }
 
@@ -24,11 +24,23 @@ export def copy-docs [dest: string] {
 # Ensures Cargo.lock exists
 export def ensure-lockfile [] {
     if not ("Cargo.lock" | path exists) {
+        print $"(ansi yellow)Generating Cargo.lock...(ansi reset)"
         cargo generate-lockfile
     }
 }
 
-# Builds with Cargo using the environment configuration
+# Prints a horizontal line marker
+export def hr-line [] {
+    print $"(ansi green)---------------------------------------------------------------------------->(ansi reset)"
+}
+
+# Prints an error message and exits
+export def error [msg: string] {
+    print $"(ansi red)ERROR:(ansi reset) ($msg)"
+    exit 1
+}
+
+# Builds with cargo rustc using the environment configuration
 export def cargo-build [target: string, binary_name: string] {
     let package = $env.PACKAGE? | default ""
     let no_default_features = $env.NO_DEFAULT_FEATURES? | default "" | $in == "true"
@@ -43,7 +55,7 @@ export def cargo-build [target: string, binary_name: string] {
         $env.RUSTFLAGS = "-C target-feature=+crt-static"
     }
 
-    mut args = ["build" "--release" "--locked" "--target" $target "-q"]
+    mut args = ["rustc" "--release" "--target" $target "-q"]
 
     if $package != "" {
         $args = ($args | append ["--package" $package])

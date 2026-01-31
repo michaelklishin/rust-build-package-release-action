@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 
-use common.nu [get-cargo-info, output, copy-docs, ensure-lockfile, cargo-build]
+use common.nu [get-cargo-info, output, copy-docs, ensure-lockfile, cargo-build, hr-line, error]
 
 def main [] {
     let target = $env.TARGET? | default "x86_64-unknown-linux-gnu"
@@ -9,15 +9,13 @@ def main [] {
     let version = $info.version
 
     if $binary_name == "" {
-        print "error: could not determine binary name"
-        exit 1
+        error "could not determine binary name"
     }
     if $version == "" {
-        print "error: could not determine version"
-        exit 1
+        error "could not determine version"
     }
 
-    print $"Building ($binary_name) v($version) for ($target)"
+    print $"(ansi green)Building(ansi reset) ($binary_name) v($version) for ($target)"
 
     let release_dir = $"target/($target)/release"
     rm -rf $release_dir
@@ -29,8 +27,7 @@ def main [] {
 
     let src = $"($release_dir)/($binary_name)"
     if not ($src | path exists) {
-        print $"error: binary not found: ($src)"
-        exit 1
+        error $"binary not found: ($src)"
     }
 
     let artifact = $"($binary_name)-($version)-($target)"
@@ -39,7 +36,11 @@ def main [] {
     chmod +x $artifact_path
     copy-docs $release_dir
 
-    print $"Created: ($artifact)"
+    print $"(char nl)(ansi green)Build artifacts:(ansi reset)"
+    hr-line
+    ls $release_dir | print
+
+    print $"(ansi green)Created:(ansi reset) ($artifact)"
     output "artifact" $artifact
     output "artifact_path" $artifact_path
 }

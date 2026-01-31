@@ -30,7 +30,7 @@ jobs:
       - name: Setup Nu shell
         uses: hustcer/setup-nu@56361e0eb7e0e93e97d4925f1ed07d767615f0b1 # v3.17
         with:
-          version: '0.102.0'
+          version: '0.110.0'
 
       - name: Test get-version (package)
         shell: nu {0}
@@ -78,6 +78,10 @@ jobs:
           $env.OUTPUT_PATH = "notes.md"
           nu scripts/extract-changelog.nu
           let notes = open notes.md
+          if not ($notes | str contains "## v1.0.0") {
+              print "error: missing version header"
+              exit 1
+          }
           if not ($notes | str contains "Added feature X") {
               print "error: missing expected content"
               exit 1
@@ -196,6 +200,10 @@ jobs:
 
       - name: Verify extract-changelog output
         run: |
+          if ! grep -q "## v0.5.0" release_notes.md; then
+            echo "error: missing version header"
+            exit 1
+          fi
           if ! grep -q "New feature added" release_notes.md; then
             echo "error: missing expected content"
             exit 1

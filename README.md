@@ -4,7 +4,7 @@ An opinionated GitHub Action that automates release workflows for Rust projects 
 
 This is a conventions-based release process extracted from:
 
- * [rabbitmq/rabbitmqadmin-ng](https://github.com/rabbitmq/rabbitmqadmin-ng)
+ * [rabbitmq/rabbitmqadmin-rs](https://github.com/rabbitmq/rabbitmqadmin-rs)
  * [michaelklishin/rabbitmq-lqt](https://github.com/michaelklishin/rabbitmq-lqt)
  * [michaelklishin/frm](https://github.com/michaelklishin/frm)
 
@@ -29,7 +29,7 @@ This action expects:
 ### Extract Changelog
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v1
+- uses: michaelklishin/rust-release-action@v0
   with:
     command: extract-changelog
     version: '1.2.3'
@@ -40,7 +40,7 @@ This action expects:
 Tag and expected version are inferred from `GITHUB_REF_NAME` and `NEXT_RELEASE_VERSION`:
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v1
+- uses: michaelklishin/rust-release-action@v0
   id: validate
   with:
     command: validate-version
@@ -49,7 +49,7 @@ Tag and expected version are inferred from `GITHUB_REF_NAME` and `NEXT_RELEASE_V
 Or specify explicitly:
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v1
+- uses: michaelklishin/rust-release-action@v0
   with:
     command: validate-version
     tag: v1.2.3
@@ -59,7 +59,7 @@ Or specify explicitly:
 ### Get Version from Cargo.toml
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v1
+- uses: michaelklishin/rust-release-action@v0
   id: version
   with:
     command: get-version
@@ -68,7 +68,7 @@ Or specify explicitly:
 ### Build Release Binaries
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v1
+- uses: michaelklishin/rust-release-action@v0
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
@@ -79,7 +79,7 @@ Or specify explicitly:
 For Cargo workspaces, specify the package name:
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v1
+- uses: michaelklishin/rust-release-action@v0
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
@@ -92,19 +92,32 @@ For Cargo workspaces, specify the package name:
 For musl targets, static linking is enabled automatically. Use `no-default-features` to disable features that require dynamic linking (e.g., native-tls):
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v1
+- uses: michaelklishin/rust-release-action@v0
   with:
     command: release-linux
     target: x86_64-unknown-linux-musl
     no-default-features: 'true'
 ```
 
+### Windows MSI Installer
+
+Build a Windows MSI installer using cargo-wix:
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: release-windows-msi
+    target: x86_64-pc-windows-msvc
+```
+
+This requires a `wix/main.wxs` file in your project. See [cargo-wix documentation](https://github.com/volks73/cargo-wix) for setup.
+
 ### Monorepo Support
 
 Use `working-directory` for projects in subdirectories:
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v1
+- uses: michaelklishin/rust-release-action@v0
   with:
     command: get-version
     working-directory: crates/my-cli
@@ -164,7 +177,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: michaelklishin/rust-release-action@v1
+      - uses: michaelklishin/rust-release-action@v0
         id: validate
         with:
           command: validate-version
@@ -182,11 +195,17 @@ jobs:
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-24.04-arm
             command: release-linux
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-22.04
+            command: release-linux
           - target: aarch64-apple-darwin
             os: macos-14
             command: release-macos
           - target: x86_64-pc-windows-msvc
             os: windows-2022
+            command: release-windows
+          - target: aarch64-pc-windows-msvc
+            os: windows-11-arm
             command: release-windows
     runs-on: ${{ matrix.os }}
     steps:
@@ -201,7 +220,7 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - uses: michaelklishin/rust-release-action@v1
+      - uses: michaelklishin/rust-release-action@v0
         id: build
         with:
           command: ${{ matrix.command }}
@@ -220,7 +239,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: michaelklishin/rust-release-action@v1
+      - uses: michaelklishin/rust-release-action@v0
         with:
           command: extract-changelog
           version: ${{ needs.validate.outputs.version }}
