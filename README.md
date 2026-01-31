@@ -4,7 +4,7 @@ An opinionated GitHub Action that automates release workflows for Rust projects 
 
 This is a conventions-based release process extracted from:
 
- * [rabbitmq/rabbitmqadmin-rs](https://github.com/rabbitmq/rabbitmqadmin-rs)
+ * [rabbitmq/rabbitmqadmin-ng](https://github.com/rabbitmq/rabbitmqadmin-ng)
  * [michaelklishin/rabbitmq-lqt](https://github.com/michaelklishin/rabbitmq-lqt)
  * [michaelklishin/frm](https://github.com/michaelklishin/frm)
 
