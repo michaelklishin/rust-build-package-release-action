@@ -8,7 +8,7 @@ branding:
 
 inputs:
   command:
-    description: 'Command: extract-changelog, validate-version, get-version, release-linux, release-macos, release-windows, release-windows-msi'
+    description: 'Command: extract-changelog, validate-version, get-version, release-linux, release-linux-deb, release-linux-rpm, release-linux-apk, release-macos, release-windows, release-windows-msi'
     required: true
 
   version:
@@ -96,6 +96,73 @@ inputs:
     description: 'Working directory for commands'
     required: false
     default: '.'
+
+  pkg-description:
+    description: 'Package description for .deb/.rpm'
+    required: false
+
+  pkg-maintainer:
+    description: 'Package maintainer (format: Name <email>)'
+    required: false
+
+  pkg-homepage:
+    description: 'Package homepage URL'
+    required: false
+
+  pkg-license:
+    description: 'Package license (e.g., MIT, Apache-2.0)'
+    required: false
+
+  pkg-vendor:
+    description: 'Package vendor name'
+    required: false
+
+  pkg-section:
+    description: 'Debian package section (default: utils)'
+    required: false
+    default: 'utils'
+
+  pkg-priority:
+    description: 'Debian package priority (default: optional)'
+    required: false
+    default: 'optional'
+
+  pkg-group:
+    description: 'RPM package group (default: Applications/System)'
+    required: false
+    default: 'Applications/System'
+
+  pkg-release:
+    description: 'Package release/revision number (default: 1 for RPM, 0 for APK)'
+    required: false
+
+  pkg-depends:
+    description: 'Comma-separated package dependencies'
+    required: false
+
+  pkg-recommends:
+    description: 'Comma-separated recommended packages'
+    required: false
+
+  pkg-suggests:
+    description: 'Comma-separated suggested packages'
+    required: false
+
+  pkg-conflicts:
+    description: 'Comma-separated conflicting packages'
+    required: false
+
+  pkg-replaces:
+    description: 'Comma-separated packages this replaces'
+    required: false
+
+  pkg-provides:
+    description: 'Comma-separated virtual packages this provides'
+    required: false
+
+  pkg-contents:
+    description: 'Extra files to include (format: src:dst,src:dst)'
+    required: false
 
 outputs:
   version:
@@ -192,6 +259,81 @@ runs:
                 if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
                 if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
                 nu $"($scripts)/release-linux.nu"
+            }
+            "release-linux-deb" => {
+                if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
+                if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
+                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
+                if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
+                if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
+                if "${{ inputs.pkg-description }}" != "" { $env.PKG_DESCRIPTION = "${{ inputs.pkg-description }}" }
+                if "${{ inputs.pkg-maintainer }}" != "" { $env.PKG_MAINTAINER = "${{ inputs.pkg-maintainer }}" }
+                if "${{ inputs.pkg-homepage }}" != "" { $env.PKG_HOMEPAGE = "${{ inputs.pkg-homepage }}" }
+                if "${{ inputs.pkg-license }}" != "" { $env.PKG_LICENSE = "${{ inputs.pkg-license }}" }
+                if "${{ inputs.pkg-vendor }}" != "" { $env.PKG_VENDOR = "${{ inputs.pkg-vendor }}" }
+                if "${{ inputs.pkg-section }}" != "" { $env.PKG_SECTION = "${{ inputs.pkg-section }}" }
+                if "${{ inputs.pkg-priority }}" != "" { $env.PKG_PRIORITY = "${{ inputs.pkg-priority }}" }
+                if "${{ inputs.pkg-depends }}" != "" { $env.PKG_DEPENDS = "${{ inputs.pkg-depends }}" }
+                if "${{ inputs.pkg-recommends }}" != "" { $env.PKG_RECOMMENDS = "${{ inputs.pkg-recommends }}" }
+                if "${{ inputs.pkg-suggests }}" != "" { $env.PKG_SUGGESTS = "${{ inputs.pkg-suggests }}" }
+                if "${{ inputs.pkg-conflicts }}" != "" { $env.PKG_CONFLICTS = "${{ inputs.pkg-conflicts }}" }
+                if "${{ inputs.pkg-replaces }}" != "" { $env.PKG_REPLACES = "${{ inputs.pkg-replaces }}" }
+                if "${{ inputs.pkg-provides }}" != "" { $env.PKG_PROVIDES = "${{ inputs.pkg-provides }}" }
+                if "${{ inputs.pkg-contents }}" != "" { $env.PKG_CONTENTS = "${{ inputs.pkg-contents }}" }
+                nu $"($scripts)/release-linux-deb.nu"
+            }
+            "release-linux-rpm" => {
+                if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
+                if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
+                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
+                if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
+                if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
+                if "${{ inputs.pkg-description }}" != "" { $env.PKG_DESCRIPTION = "${{ inputs.pkg-description }}" }
+                if "${{ inputs.pkg-maintainer }}" != "" { $env.PKG_MAINTAINER = "${{ inputs.pkg-maintainer }}" }
+                if "${{ inputs.pkg-homepage }}" != "" { $env.PKG_HOMEPAGE = "${{ inputs.pkg-homepage }}" }
+                if "${{ inputs.pkg-license }}" != "" { $env.PKG_LICENSE = "${{ inputs.pkg-license }}" }
+                if "${{ inputs.pkg-vendor }}" != "" { $env.PKG_VENDOR = "${{ inputs.pkg-vendor }}" }
+                if "${{ inputs.pkg-group }}" != "" { $env.PKG_GROUP = "${{ inputs.pkg-group }}" }
+                if "${{ inputs.pkg-release }}" != "" { $env.PKG_RELEASE = "${{ inputs.pkg-release }}" }
+                if "${{ inputs.pkg-depends }}" != "" { $env.PKG_DEPENDS = "${{ inputs.pkg-depends }}" }
+                if "${{ inputs.pkg-recommends }}" != "" { $env.PKG_RECOMMENDS = "${{ inputs.pkg-recommends }}" }
+                if "${{ inputs.pkg-suggests }}" != "" { $env.PKG_SUGGESTS = "${{ inputs.pkg-suggests }}" }
+                if "${{ inputs.pkg-conflicts }}" != "" { $env.PKG_CONFLICTS = "${{ inputs.pkg-conflicts }}" }
+                if "${{ inputs.pkg-replaces }}" != "" { $env.PKG_REPLACES = "${{ inputs.pkg-replaces }}" }
+                if "${{ inputs.pkg-provides }}" != "" { $env.PKG_PROVIDES = "${{ inputs.pkg-provides }}" }
+                if "${{ inputs.pkg-contents }}" != "" { $env.PKG_CONTENTS = "${{ inputs.pkg-contents }}" }
+                nu $"($scripts)/release-linux-rpm.nu"
+            }
+            "release-linux-apk" => {
+                if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
+                if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
+                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
+                if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
+                if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
+                if "${{ inputs.pkg-description }}" != "" { $env.PKG_DESCRIPTION = "${{ inputs.pkg-description }}" }
+                if "${{ inputs.pkg-maintainer }}" != "" { $env.PKG_MAINTAINER = "${{ inputs.pkg-maintainer }}" }
+                if "${{ inputs.pkg-homepage }}" != "" { $env.PKG_HOMEPAGE = "${{ inputs.pkg-homepage }}" }
+                if "${{ inputs.pkg-license }}" != "" { $env.PKG_LICENSE = "${{ inputs.pkg-license }}" }
+                if "${{ inputs.pkg-vendor }}" != "" { $env.PKG_VENDOR = "${{ inputs.pkg-vendor }}" }
+                if "${{ inputs.pkg-release }}" != "" { $env.PKG_RELEASE = "${{ inputs.pkg-release }}" }
+                if "${{ inputs.pkg-depends }}" != "" { $env.PKG_DEPENDS = "${{ inputs.pkg-depends }}" }
+                if "${{ inputs.pkg-conflicts }}" != "" { $env.PKG_CONFLICTS = "${{ inputs.pkg-conflicts }}" }
+                if "${{ inputs.pkg-replaces }}" != "" { $env.PKG_REPLACES = "${{ inputs.pkg-replaces }}" }
+                if "${{ inputs.pkg-provides }}" != "" { $env.PKG_PROVIDES = "${{ inputs.pkg-provides }}" }
+                if "${{ inputs.pkg-contents }}" != "" { $env.PKG_CONTENTS = "${{ inputs.pkg-contents }}" }
+                nu $"($scripts)/release-linux-apk.nu"
             }
             "release-macos" => {
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }

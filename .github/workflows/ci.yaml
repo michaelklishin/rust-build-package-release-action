@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'scripts/**'
+      - 'tests/**'
       - 'action.yml'
       - '.github/workflows/ci.yaml'
   pull_request:
@@ -33,6 +34,10 @@ jobs:
         uses: hustcer/setup-nu@9e713eb2a9c4c5c7f7aa4278295684786bdfb280
         with:
           version: '0.110.0'
+
+      - name: Run Nu shell unit tests
+        shell: nu {0}
+        run: nu tests/run.nu
 
       - name: Test get-version (package)
         shell: nu {0}

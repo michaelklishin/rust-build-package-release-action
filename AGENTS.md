@@ -29,9 +29,14 @@ Set required environment variables before running scripts.
  * `scripts/validate-version.nu`: version validation logic, including pre-release versions
  * `scripts/get-version.nu`: reads version from `Cargo.toml`
  * `scripts/release-linux.nu`: Linux build script
- * `scripts/release-macos.nu`: ditto for macOS
- * `scripts/release-windows.nu`: ditto for Windows
+ * `scripts/release-linux-deb.nu`: Linux .deb package via nfpm
+ * `scripts/release-linux-rpm.nu`: Linux .rpm package via nfpm
+ * `scripts/release-linux-apk.nu`: Linux .apk package via nfpm
+ * `scripts/release-macos.nu`: macOS build script
+ * `scripts/release-windows.nu`: Windows build script
  * `scripts/release-windows-msi.nu`: Windows MSI installer via cargo-wix
+ * `tests/run.nu`: Nu shell test runner
+ * `tests/nu/*.nu`: unit tests for pure functions
 
 ## Nu Script Style
 

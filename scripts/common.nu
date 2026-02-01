@@ -217,3 +217,154 @@ export def build-summary [
     }
     $summary | to json
 }
+
+# Checks that nfpm is available, installs if missing
+export def check-nfpm [] {
+    if (which nfpm | is-empty) {
+        print $"(ansi yellow)nfpm not found, installing...(ansi reset)"
+        let arch = if (^uname -m | str trim) == "aarch64" { "arm64" } else { "amd64" }
+        let nfpm_version = "2.41.1"
+        let url = $"https://github.com/goreleaser/nfpm/releases/download/v($nfpm_version)/nfpm_($nfpm_version)_linux_($arch).tar.gz"
+        http get $url | tar xz -C /tmp nfpm
+        sudo mv /tmp/nfpm /usr/local/bin/nfpm
+    }
+}
+
+# Formats a list of dependencies for nfpm YAML
+export def format-dependency-list [key: string, raw: string]: nothing -> string {
+    if $raw == "" {
+        return ""
+    }
+    let items = $raw | split row "," | each {|i| $i | str trim } | where {|i| $i != ""}
+    if ($items | is-empty) {
+        return ""
+    }
+    mut result = $"($key):\n"
+    for item in $items {
+        $result = $result + $"  - \"($item)\"\n"
+    }
+    $result
+}
+
+# Generates base nfpm config header
+export def nfpm-base-config [
+    binary_name: string
+    version: string
+    arch: string
+]: nothing -> string {
+    let description = $env.PKG_DESCRIPTION? | default $"($binary_name) - built with rust-release-action"
+    let maintainer = $env.PKG_MAINTAINER? | default "Unknown <unknown@example.com>"
+    let homepage = $env.PKG_HOMEPAGE? | default ""
+    let license = $env.PKG_LICENSE? | default ""
+    let vendor = $env.PKG_VENDOR? | default ""
+
+    mut config = $"name: \"($binary_name)\"
+arch: \"($arch)\"
+platform: linux
+version: \"($version)\"
+maintainer: \"($maintainer)\"
+description: \"($description)\"
+"
+    if $homepage != "" { $config = $config + $"homepage: \"($homepage)\"\n" }
+    if $license != "" { $config = $config + $"license: \"($license)\"\n" }
+    if $vendor != "" { $config = $config + $"vendor: \"($vendor)\"\n" }
+    $config
+}
+
+# Generates nfpm contents section for binary and docs
+export def nfpm-contents-section [binary_name: string, binary_path: string]: nothing -> string {
+    mut config = $"
+contents:
+  - src: \"($binary_path)\"
+    dst: \"/usr/bin/($binary_name)\"
+    file_info:
+      mode: 0755
+"
+    let licenses = glob LICENSE* | each {|f| $f | path expand }
+    for lic in $licenses {
+        let basename = $lic | path basename
+        $config = $config + $"  - src: \"($lic)\"
+    dst: \"/usr/share/doc/($binary_name)/($basename)\"
+    file_info:
+      mode: 0644
+"
+    }
+
+    if ("README.md" | path exists) {
+        let readme = "README.md" | path expand
+        $config = $config + $"  - src: \"($readme)\"
+    dst: \"/usr/share/doc/($binary_name)/README.md\"
+    file_info:
+      mode: 0644
+"
+    }
+
+    let includes_raw = $env.PKG_CONTENTS? | default ""
+    if $includes_raw != "" {
+        let includes = $includes_raw | split row "," | each {|i| $i | str trim } | where {|i| $i != ""}
+        for inc in $includes {
+            let parts = $inc | split row ":"
+            if ($parts | length) == 2 {
+                let src = $parts | first | path expand
+                let dst = $parts | last
+                $config = $config + $"  - src: \"($src)\"
+    dst: \"($dst)\"
+"
+            }
+        }
+    }
+    $config
+}
+
+# Generates nfpm dependency sections
+export def nfpm-dependencies-section []: nothing -> string {
+    let depends = $env.PKG_DEPENDS? | default ""
+    let recommends = $env.PKG_RECOMMENDS? | default ""
+    let suggests = $env.PKG_SUGGESTS? | default ""
+    let conflicts = $env.PKG_CONFLICTS? | default ""
+    let replaces = $env.PKG_REPLACES? | default ""
+    let provides = $env.PKG_PROVIDES? | default ""
+
+    mut config = ""
+    $config = $config + (format-dependency-list "depends" $depends)
+    $config = $config + (format-dependency-list "recommends" $recommends)
+    $config = $config + (format-dependency-list "suggests" $suggests)
+    $config = $config + (format-dependency-list "conflicts" $conflicts)
+    $config = $config + (format-dependency-list "replaces" $replaces)
+    $config = $config + (format-dependency-list "provides" $provides)
+    $config
+}
+
+# Installs cross-compilation dependencies for Linux targets
+export def install-linux-cross-deps [target: string] {
+    let is_ubuntu = (which apt-get | is-not-empty)
+    let is_fedora = (which dnf | is-not-empty)
+
+    if $target =~ "musl" {
+        if $is_ubuntu {
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq musl-tools
+        }
+    } else if $target == "aarch64-unknown-linux-gnu" {
+        let arch = (^uname -m | str trim)
+        if $arch != "aarch64" {
+            if $is_ubuntu {
+                sudo apt-get update -qq
+                sudo apt-get install -y -qq gcc-aarch64-linux-gnu
+            } else if $is_fedora {
+                sudo dnf install -y gcc-aarch64-linux-gnu
+            }
+            $env.CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "aarch64-linux-gnu-gcc"
+        }
+    } else if $target == "armv7-unknown-linux-gnueabihf" {
+        if $is_ubuntu {
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq pkg-config gcc-arm-linux-gnueabihf
+        } else if $is_fedora {
+            sudo dnf install -y pkg-config gcc-arm-linux-gnueabihf
+        }
+        $env.CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER = "arm-linux-gnueabihf-gcc"
+    }
+
+    rustup target add $target
+}
