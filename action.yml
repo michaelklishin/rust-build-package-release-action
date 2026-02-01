@@ -151,7 +151,7 @@ runs:
   steps:
     - name: Setup Nu shell
       # v3.17
-      uses: hustcer/setup-nu@56361e0eb7e0e93e97d4925f1ed07d767615f0b1
+      uses: hustcer/setup-nu@9e713eb2a9c4c5c7f7aa4278295684786bdfb280
       with:
         version: '0.110.0'
 

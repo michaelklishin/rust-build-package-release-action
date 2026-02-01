@@ -25,10 +25,12 @@ jobs:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, macos-14, windows-2022]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Setup Nu shell
-        uses: hustcer/setup-nu@56361e0eb7e0e93e97d4925f1ed07d767615f0b1 # v3.17
+        # v3.17
+        uses: hustcer/setup-nu@9e713eb2a9c4c5c7f7aa4278295684786bdfb280
         with:
           version: '0.110.0'
 
@@ -156,7 +158,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Create test files
         run: |
