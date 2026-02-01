@@ -12,11 +12,7 @@ def target-to-deb-arch [target: string]: nothing -> string {
         "armv7-unknown-linux-gnueabihf" => "armhf"
         "i686-unknown-linux-gnu" | "i686-unknown-linux-musl" => "i386"
         _ => {
-            if $target =~ "x86_64" { "amd64" }
-            else if $target =~ "aarch64" { "arm64" }
-            else if $target =~ "armv7" { "armhf" }
-            else if $target =~ "i686" { "i386" }
-            else { "" }
+            if $target =~ "x86_64" { "amd64" } else if $target =~ "aarch64" { "arm64" } else if $target =~ "armv7" { "armhf" } else if $target =~ "i686" { "i386" } else { "" }
         }
     }
 }
@@ -29,11 +25,7 @@ def target-to-rpm-arch [target: string]: nothing -> string {
         "armv7-unknown-linux-gnueabihf" => "armv7hl"
         "i686-unknown-linux-gnu" | "i686-unknown-linux-musl" => "i686"
         _ => {
-            if $target =~ "x86_64" { "x86_64" }
-            else if $target =~ "aarch64" { "aarch64" }
-            else if $target =~ "armv7" { "armv7hl" }
-            else if $target =~ "i686" { "i686" }
-            else { "" }
+            if $target =~ "x86_64" { "x86_64" } else if $target =~ "aarch64" { "aarch64" } else if $target =~ "armv7" { "armv7hl" } else if $target =~ "i686" { "i686" } else { "" }
         }
     }
 }
@@ -46,11 +38,7 @@ def target-to-apk-arch [target: string]: nothing -> string {
         "armv7-unknown-linux-gnueabihf" | "armv7-unknown-linux-musleabihf" => "armv7"
         "i686-unknown-linux-gnu" | "i686-unknown-linux-musl" => "x86"
         _ => {
-            if $target =~ "x86_64" { "x86_64" }
-            else if $target =~ "aarch64" { "aarch64" }
-            else if $target =~ "armv7" { "armv7" }
-            else if $target =~ "i686" { "x86" }
-            else { "" }
+            if $target =~ "x86_64" { "x86_64" } else if $target =~ "aarch64" { "aarch64" } else if $target =~ "armv7" { "armv7" } else if $target =~ "i686" { "x86" } else { "" }
         }
     }
 }

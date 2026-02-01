@@ -368,3 +368,25 @@ export def install-linux-cross-deps [target: string] {
 
     rustup target add $target
 }
+
+# Checks that cargo-sbom is available, installs if missing
+export def check-cargo-sbom [] {
+    if (which cargo-sbom | is-empty) {
+        print $"(ansi yellow)cargo-sbom not found, installing...(ansi reset)"
+        cargo install cargo-sbom
+    }
+}
+
+# Generates SPDX and CycloneDX SBOMs
+export def generate-sbom [output_dir: string, binary_name: string, version: string]: nothing -> record<spdx: string, cyclonedx: string> {
+    let spdx_path = $"($output_dir)/($binary_name)-($version).spdx.json"
+    let cyclonedx_path = $"($output_dir)/($binary_name)-($version).cdx.json"
+
+    print $"(ansi green)Generating SPDX SBOM...(ansi reset)"
+    cargo sbom --output-format spdx_json_2_3 | save -f $spdx_path
+
+    print $"(ansi green)Generating CycloneDX SBOM...(ansi reset)"
+    cargo sbom --output-format cyclone_dx_json_1_4 | save -f $cyclonedx_path
+
+    { spdx: $spdx_path, cyclonedx: $cyclonedx_path }
+}

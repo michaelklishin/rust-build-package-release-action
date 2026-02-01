@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 
-use common.nu [get-cargo-info, output, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, list-archivable-files, output-build-results]
+use common.nu [get-cargo-info, output, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, list-archivable-files, output-build-results, install-linux-cross-deps]
 
 def main [] {
     check-rust-toolchain
@@ -25,7 +25,7 @@ def main [] {
     mkdir $release_dir
 
     ensure-lockfile
-    install-dependencies $target
+    install-linux-cross-deps $target
     cargo-build $target $binary_name
 
     let binary_path = $"($release_dir)/($binary_name)"
@@ -70,37 +70,4 @@ def main [] {
         print $"(ansi green)Created:(ansi reset) ($artifact)"
         output-build-results $binary_name $version $target $artifact $artifact_path $checksums
     }
-}
-
-def install-dependencies [target: string] {
-    let is_ubuntu = (which apt-get | is-not-empty)
-    let is_fedora = (which dnf | is-not-empty)
-
-    if $target =~ "musl" {
-        if $is_ubuntu {
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq musl-tools
-        }
-    } else if $target == "aarch64-unknown-linux-gnu" {
-        let arch = (^uname -m | str trim)
-        if $arch != "aarch64" {
-            if $is_ubuntu {
-                sudo apt-get update -qq
-                sudo apt-get install -y -qq gcc-aarch64-linux-gnu
-            } else if $is_fedora {
-                sudo dnf install -y gcc-aarch64-linux-gnu
-            }
-            $env.CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "aarch64-linux-gnu-gcc"
-        }
-    } else if $target == "armv7-unknown-linux-gnueabihf" {
-        if $is_ubuntu {
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq pkg-config gcc-arm-linux-gnueabihf
-        } else if $is_fedora {
-            sudo dnf install -y pkg-config gcc-arm-linux-gnueabihf
-        }
-        $env.CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER = "arm-linux-gnueabihf-gcc"
-    }
-
-    rustup target add $target
 }

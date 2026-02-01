@@ -1,22 +1,18 @@
 # rust-release-action
 
-An opinionated GitHub Action that automates release workflows for Rust projects using Nu shell scripts.
-
-This is a conventions-based release process extracted from:
-
- * [rabbitmq/rabbitmqadmin-ng](https://github.com/rabbitmq/rabbitmqadmin-ng)
- * [michaelklishin/rabbitmq-lqt](https://github.com/michaelklishin/rabbitmq-lqt)
- * [michaelklishin/frm](https://github.com/michaelklishin/frm)
+An opinionated, conventions-based GitHub Action that automates release workflows for Rust projects using Nu shell scripts.
 
 ## Features
 
- * Parse `CHANGELOG.md` and extract release notes for a specific version
- * Validate git tags match expected versions via `NEXT_RELEASE_VERSION` variable
- * Support for semantic versioning including pre-release tags (alpha, beta, rc)
- * Extract version from `Cargo.toml` (supports workspace manifests)
- * Build and package binaries for Linux, macOS, and Windows
- * Generate SHA256, SHA512, and BLAKE2 checksums
- * JSON build summary for easy integration
+ * Cross-platform builds for Linux, macOS, and Windows
+ * Linux packages: `.deb`, `.rpm`, `.apk` via [nfpm](https://nfpm.goreleaser.com/)
+ * macOS `.dmg` installers via `hdiutil`
+ * Windows `.msi` installers via [cargo-wix](https://github.com/volks73/cargo-wix)
+ * Homebrew formula, AUR PKGBUILD, and Winget manifest generation
+ * Sigstore/cosign artifact signing
+ * SBOM generation in SPDX and CycloneDX formats
+ * Changelog parsing and GitHub Release body formatting
+ * SHA256, SHA512, and BLAKE2 checksums
 
 ## Conventions
 
@@ -25,80 +21,52 @@ This action expects:
  1. **Changelog format**: versions as `## v{version} ({date})` headers
  2. **Tag format**: tags prefixed with `v` (e.g., `v1.2.3`, `v1.0.0-beta.1`)
  3. **Version variable**: `NEXT_RELEASE_VERSION` GitHub Actions variable
- 4. **Semantic versioning**: `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` format
+ 4. **Versioning**: `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` format
 
-## Usage
+---
 
-### Extract Changelog
-
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  id: changelog
-  with:
-    command: extract-changelog
-    version: '1.2.3'
-
-# Outputs: version, release_notes_file, release_notes
-```
-
-### Validate Version
-
-Tag and expected version are inferred from `GITHUB_REF_NAME` and `NEXT_RELEASE_VERSION`:
+## Quick Start
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
-  id: validate
-  with:
-    command: validate-version
-```
-
-Or specify explicitly:
-
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  with:
-    command: validate-version
-    tag: v1.2.3
-    expected-version: '1.2.3'
-```
-
-### Get Version from Cargo.toml
-
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  id: version
-  with:
-    command: get-version
-```
-
-### Build Release Binaries
-
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  id: build
-  with:
-    command: release-linux
-    target: x86_64-unknown-linux-gnu
-
-# Outputs: version, binary_name, target, binary_path, artifact, artifact_path, sha256, summary
-```
-
-### Workspace Builds
-
-For Cargo workspaces, specify the package name:
-
-```yaml
+# Build a release binary
 - uses: michaelklishin/rust-release-action@v0
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
-    package: my-cli-bin
-    binary-name: my-cli
+    locked: 'true'
 ```
 
-### Static Builds (musl)
+---
 
-For musl targets, static linking is enabled automatically. Use `no-default-features` to disable features that require dynamic linking (e.g., native-tls):
+## Inputs Reference
+
+### Core Inputs
+
+Universal options used across most commands.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `command` | **Required.** Command to run (see [Commands](#commands)) | — |
+| `version` | Version string without `v` prefix | — |
+| `target` | Rust target triple | Platform default |
+| `binary-name` | Binary name | Package name from Cargo.toml |
+| `package` | Cargo package name (for workspaces) | — |
+| `manifest` | Path to Cargo.toml | `Cargo.toml` |
+| `working-directory` | Working directory for commands | `.` |
+
+### Build Options
+
+Standard Cargo build flags. These map directly to familiar `cargo build` options.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `features` | Cargo features to enable | — |
+| `profile` | Cargo build profile | `release` |
+| `locked` | Build with `--locked` for reproducible builds | `false` |
+| `no-default-features` | Build with `--no-default-features` | `false` |
+| `rustflags` | Extra RUSTFLAGS for the build | — |
+
+**Example: Static musl build with specific features**
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -106,107 +74,277 @@ For musl targets, static linking is enabled automatically. Use `no-default-featu
     command: release-linux
     target: x86_64-unknown-linux-musl
     no-default-features: 'true'
+    features: 'rustls-tls'
+    locked: 'true'
 ```
 
-### Enable Cargo Features
+### Output Options
 
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  with:
-    command: release-linux
-    target: x86_64-unknown-linux-gnu
-    features: 'feature1,feature2'
-```
-
-### Archive Artifacts
-
-Create .tar.gz archives on Linux/macOS or .zip on Windows:
-
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  with:
-    command: release-linux
-    target: x86_64-unknown-linux-gnu
-    archive: 'true'
-```
-
-### Include Additional Files
-
-Include extra files in the archive:
-
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  with:
-    command: release-linux
-    target: x86_64-unknown-linux-gnu
-    archive: 'true'
-    include: 'config/*.toml,docs/*.md'
-```
-
-### Generate Checksums
-
-Generate multiple checksum types (default is sha256):
-
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  id: build
-  with:
-    command: release-linux
-    target: x86_64-unknown-linux-gnu
-    checksum: 'sha256,sha512'
-
-# Use the checksum in later steps
-- run: echo "SHA256: ${{ steps.build.outputs.sha256 }}"
-```
-
-### Windows MSI Installer
-
-Build a Windows MSI installer using cargo-wix:
-
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  with:
-    command: release-windows-msi
-    target: x86_64-pc-windows-msvc
-```
-
-This requires a `wix/main.wxs` file in your project. See [cargo-wix documentation](https://github.com/volks73/cargo-wix) for setup.
-
-### Monorepo Support
-
-Use `working-directory` for projects in subdirectories:
-
-```yaml
-- uses: michaelklishin/rust-release-action@v0
-  with:
-    command: get-version
-    working-directory: crates/my-cli
-```
-
-## Inputs
+Control artifact generation and checksums.
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| `command` | Command to run (required) | - |
-| `version` | Version to extract | - |
+| `archive` | Create archive (`.tar.gz` on Linux/macOS, `.zip` on Windows) | `false` |
+| `checksum` | Checksum algorithms: `sha256`, `sha512`, `b2` (comma-separated) | `sha256` |
+| `include` | Extra files to include in archive (glob patterns, comma-separated) | — |
+
+**Example: Archive with multiple checksums**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: release-linux
+    target: x86_64-unknown-linux-gnu
+    archive: 'true'
+    checksum: 'sha256,sha512'
+    include: 'config/*.toml,docs/*.md'
+```
+
+### Changelog Options
+
+For `extract-changelog` command.
+
+| Input | Description | Default |
+|-------|-------------|---------|
 | `changelog` | Path to CHANGELOG.md | `CHANGELOG.md` |
-| `output` | Output file for release notes | `release_notes.md` |
-| `tag` | Git tag for validation | `GITHUB_REF_NAME` |
-| `expected-version` | Expected version | `NEXT_RELEASE_VERSION` |
-| `manifest` | Path to Cargo.toml | `Cargo.toml` |
-| `target` | Rust target triple | platform default |
-| `binary-name` | Binary name | package name |
-| `package` | Cargo package name for workspaces | - |
-| `no-default-features` | Build with --no-default-features | `false` |
-| `features` | Comma-separated Cargo features to enable | - |
-| `target-rustflags` | Extra RUSTFLAGS for the build | - |
-| `archive` | Create archive (.tar.gz on Linux/macOS, .zip on Windows) | `false` |
-| `locked` | Build with --locked for reproducible builds | `false` |
-| `include` | Comma-separated glob patterns for additional files | - |
-| `checksum` | Checksum algorithms (sha256, sha512, b2) | `sha256` |
-| `profile` | Cargo build profile | `release` |
-| `dry-run` | Build without uploading (for testing) | `false` |
-| `working-directory` | Working directory | `.` |
+| `notes-output` | Output file for extracted release notes | `release_notes.md` |
+
+**Example: Extract changelog**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: extract-changelog
+    version: '1.2.3'
+    changelog: 'CHANGELOG.md'
+```
+
+### Version Validation
+
+For `validate-version` command.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `tag` | Git tag to validate | `GITHUB_REF_NAME` |
+| `expected-version` | Expected version to match | `NEXT_RELEASE_VERSION` variable |
+
+**Example: Validate version**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: validate-version
+    # Uses GITHUB_REF_NAME and NEXT_RELEASE_VERSION by default
+```
+
+### Package Metadata (`pkg-*`)
+
+Shared metadata for Linux packages (deb/rpm/apk), Homebrew, AUR, and Winget.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `pkg-description` | Package description | — |
+| `pkg-maintainer` | Maintainer (`Name <email>`) | — |
+| `pkg-homepage` | Project homepage URL | — |
+| `pkg-license` | License identifier (e.g., `MIT`, `Apache-2.0`) | — |
+| `pkg-vendor` | Vendor/organization name | — |
+| `pkg-depends` | Runtime dependencies (comma-separated) | — |
+| `pkg-recommends` | Recommended packages (comma-separated) | — |
+| `pkg-suggests` | Suggested packages (comma-separated) | — |
+| `pkg-conflicts` | Conflicting packages (comma-separated) | — |
+| `pkg-replaces` | Packages this replaces (comma-separated) | — |
+| `pkg-provides` | Virtual packages provided (comma-separated) | — |
+| `pkg-contents` | Extra files (`src:dst,src:dst`) | — |
+| `pkg-section` | Debian section | `utils` |
+| `pkg-priority` | Debian priority | `optional` |
+| `pkg-group` | RPM group | `Applications/System` |
+| `pkg-release` | Package release/revision number | — |
+
+**Example: Debian package with dependencies**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: release-linux-deb
+    target: x86_64-unknown-linux-gnu
+    pkg-maintainer: 'Your Name <you@example.com>'
+    pkg-description: 'A CLI tool for doing things'
+    pkg-homepage: 'https://github.com/you/project'
+    pkg-license: 'MIT'
+    pkg-depends: 'libc6,libssl3'
+```
+
+### SBOM Options (`sbom-*`)
+
+For `generate-sbom` command.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `sbom-format` | Formats: `spdx`, `cyclonedx`, or both | `spdx,cyclonedx` |
+| `sbom-dir` | Output directory | `target/sbom` |
+
+**Example: Generate SBOMs**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: generate-sbom
+    sbom-format: 'spdx,cyclonedx'
+```
+
+### Homebrew Options (`brew-*`)
+
+For `generate-homebrew` command. SHA256 values come from build step outputs.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `brew-class` | Ruby class name for formula | Auto-generated |
+| `brew-macos-arm64-url` | macOS ARM64 artifact URL | — |
+| `brew-macos-arm64-sha256` | macOS ARM64 SHA256 | — |
+| `brew-macos-x64-url` | macOS x64 artifact URL | — |
+| `brew-macos-x64-sha256` | macOS x64 SHA256 | — |
+| `brew-linux-arm64-url` | Linux ARM64 artifact URL | — |
+| `brew-linux-arm64-sha256` | Linux ARM64 SHA256 | — |
+| `brew-linux-x64-url` | Linux x64 artifact URL | — |
+| `brew-linux-x64-sha256` | Linux x64 SHA256 | — |
+| `brew-dir` | Output directory | `target/homebrew` |
+
+**Example: Generate Homebrew formula**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: generate-homebrew
+    version: ${{ needs.build.outputs.version }}
+    brew-macos-arm64-url: 'https://github.com/you/proj/releases/download/v1.0.0/proj-1.0.0-aarch64-apple-darwin.tar.gz'
+    brew-macos-arm64-sha256: ${{ needs.build-macos-arm64.outputs.sha256 }}
+    brew-linux-x64-url: 'https://github.com/you/proj/releases/download/v1.0.0/proj-1.0.0-x86_64-unknown-linux-gnu.tar.gz'
+    brew-linux-x64-sha256: ${{ needs.build-linux-x64.outputs.sha256 }}
+```
+
+### Signing Options
+
+For `sign-artifact` command.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `artifact` | Path to artifact for Sigstore signing | — |
+
+**Example: Sign artifact**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: sign-artifact
+    artifact: 'target/release/myapp-1.0.0.tar.gz'
+```
+
+### Release Body Options
+
+For `format-release` command.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `artifacts-dir` | Directory containing release artifacts | `release` |
+| `notes-file` | Release notes file to include | `release_notes.md` |
+| `include-checksums` | Include checksums section | `true` |
+| `include-signatures` | Include signatures section | `true` |
+
+**Example: Format release body**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: format-release
+    version: '1.0.0'
+    artifacts-dir: 'release'
+```
+
+### AUR Options (`aur-*`)
+
+For `generate-aur` command.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `aur-name` | AUR package name | Binary name |
+| `aur-maintainer` | Maintainer (`Name <email>`) | — |
+| `aur-source-url` | Source tarball URL | — |
+| `aur-source-sha256` | Source SHA256 | — |
+| `aur-makedepends` | Build dependencies (comma-separated) | `cargo` |
+| `aur-optdepends` | Optional dependencies | — |
+| `aur-dir` | Output directory | `target/aur` |
+
+**Example: Generate AUR PKGBUILD**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: generate-aur
+    version: '1.0.0'
+    aur-maintainer: 'Your Name <you@example.com>'
+    aur-source-url: 'https://github.com/you/project/archive/refs/tags/v1.0.0.tar.gz'
+    aur-source-sha256: ${{ steps.source.outputs.sha256 }}
+    pkg-description: 'A CLI tool'
+    pkg-license: 'MIT'
+```
+
+### Winget Options (`winget-*`)
+
+For `generate-winget` command.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `winget-publisher` | Publisher display name | — |
+| `winget-publisher-id` | Publisher ID | Publisher without spaces |
+| `winget-package-id` | Package ID | Binary name |
+| `winget-license-url` | License URL | — |
+| `winget-copyright` | Copyright notice | — |
+| `winget-tags` | Package tags (comma-separated) | — |
+| `winget-x64-url` | Windows x64 artifact URL | — |
+| `winget-x64-sha256` | Windows x64 SHA256 | — |
+| `winget-arm64-url` | Windows ARM64 artifact URL | — |
+| `winget-arm64-sha256` | Windows ARM64 SHA256 | — |
+| `winget-dir` | Output directory | `target/winget` |
+
+**Example: Generate Winget manifest**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: generate-winget
+    version: '1.0.0'
+    winget-publisher: 'Your Name'
+    winget-x64-url: 'https://github.com/you/project/releases/download/v1.0.0/project-1.0.0-x86_64-pc-windows-msvc.zip'
+    winget-x64-sha256: ${{ needs.build-windows.outputs.sha256 }}
+    pkg-description: 'A CLI tool'
+    pkg-license: 'MIT'
+```
+
+---
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `extract-changelog` | Extract release notes from CHANGELOG.md |
+| `validate-version` | Validate git tag matches expected version |
+| `get-version` | Get version from Cargo.toml |
+| `generate-sbom` | Generate SPDX and CycloneDX SBOMs |
+| `generate-homebrew` | Generate Homebrew formula |
+| `generate-aur` | Generate AUR PKGBUILD and .SRCINFO |
+| `generate-winget` | Generate Winget manifest files |
+| `sign-artifact` | Sign artifact with Sigstore/cosign |
+| `format-release` | Format GitHub Release body |
+| `release-linux` | Build Linux binary or tarball |
+| `release-linux-deb` | Build Debian package |
+| `release-linux-rpm` | Build RPM package |
+| `release-linux-apk` | Build Alpine APK package |
+| `release-macos` | Build macOS binary or tarball |
+| `release-macos-dmg` | Build macOS DMG installer |
+| `release-windows` | Build Windows binary or zip |
+| `release-windows-msi` | Build Windows MSI installer |
+
+---
 
 ## Outputs
 
@@ -218,12 +356,28 @@ Use `working-directory` for projects in subdirectories:
 | `artifact` | Artifact filename |
 | `artifact_path` | Full path to artifact |
 | `binary_name` | Binary name that was built |
-| `binary_path` | Path to the raw binary (before archiving) |
+| `binary_path` | Path to raw binary (before archiving) |
 | `target` | Target triple used for the build |
-| `sha256` | SHA256 checksum of the artifact |
-| `sha512` | SHA512 checksum of the artifact |
-| `b2` | BLAKE2 checksum of the artifact |
-| `summary` | JSON summary of the build |
+| `sha256` | SHA256 checksum |
+| `sha512` | SHA512 checksum |
+| `b2` | BLAKE2 checksum |
+| `summary` | JSON build summary |
+| `sbom_spdx` | Path to SPDX SBOM file |
+| `sbom_cyclonedx` | Path to CycloneDX SBOM file |
+| `formula_file` | Path to Homebrew formula |
+| `formula_class` | Homebrew formula class name |
+| `formula` | Homebrew formula content |
+| `signature_path` | Path to signature file |
+| `certificate_path` | Path to signing certificate |
+| `bundle_path` | Path to Sigstore bundle |
+| `body` | Formatted release body |
+| `pkgbuild_path` | Path to AUR PKGBUILD |
+| `srcinfo_path` | Path to AUR .SRCINFO |
+| `pkgbuild` | PKGBUILD content |
+| `manifest_dir` | Winget manifest directory |
+| `manifest_id` | Winget manifest ID |
+
+---
 
 ## Complete Workflow Example
 
@@ -231,7 +385,6 @@ Use `working-directory` for projects in subdirectories:
 name: Release
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
@@ -239,20 +392,13 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   validate:
     runs-on: ubuntu-22.04
-    timeout-minutes: 5
     outputs:
       version: ${{ steps.validate.outputs.version }}
     steps:
-      # v4.2.2
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
+      - uses: actions/checkout@v4
       - uses: michaelklishin/rust-release-action@v0
         id: validate
         with:
@@ -260,18 +406,10 @@ jobs:
 
   build:
     needs: validate
-    timeout-minutes: 30
     strategy:
-      fail-fast: false
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
-            os: ubuntu-22.04
-            command: release-linux
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
-            command: release-linux
-          - target: x86_64-unknown-linux-musl
             os: ubuntu-22.04
             command: release-linux
           - target: aarch64-apple-darwin
@@ -280,79 +418,44 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-2022
             command: release-windows
-          - target: aarch64-pc-windows-msvc
-            os: windows-11-arm
-            command: release-windows
     runs-on: ${{ matrix.os }}
     steps:
-      # v4.2.2
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Setup Rust
-        run: |
-          rustup toolchain install stable --profile minimal
-          rustup default stable
-
-      # v2.7.8
-      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6
-        with:
-          key: ${{ matrix.target }}
-
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
       - uses: michaelklishin/rust-release-action@v0
         id: build
         with:
           command: ${{ matrix.command }}
           target: ${{ matrix.target }}
           locked: 'true'
-
-      # v4.6.2
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+          archive: 'true'
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/
-          retention-days: 2
+          path: target/${{ matrix.target }}/release/*
 
   release:
     needs: [validate, build]
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
     steps:
-      # v4.2.2
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
+      - uses: actions/checkout@v4
       - uses: michaelklishin/rust-release-action@v0
         with:
           command: extract-changelog
           version: ${{ needs.validate.outputs.version }}
-
-      # v4.3.0
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: Collect release files
-        run: |
+      - run: |
           mkdir -p release
-          find artifacts -type f -name '*-${{ needs.validate.outputs.version }}-*' -exec cp {} release/ \;
-
-      # v2.2.2
-      - uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
+          find artifacts -type f -name '*${{ needs.validate.outputs.version }}*' -exec cp {} release/ \;
+      - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.validate.outputs.version }}
-          name: v${{ needs.validate.outputs.version }}
           body_path: release_notes.md
           files: release/*
 ```
 
-## Best Practices
-
- * Actions pinned to commit SHAs
- * Minimal token permissions
- * Uses `Swatinem/rust-cache` for faster builds
- * `--locked` flag for reproducible builds
- * Specific runner versions (as opposed to `*-latest`)
- * Timeouts on all jobs
- * Concurrency settings to prevent duplicate runs
+---
 
 ## License
 

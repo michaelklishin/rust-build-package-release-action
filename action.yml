@@ -7,162 +7,285 @@ branding:
   color: 'orange'
 
 inputs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Core inputs - universal options used across commands
+  # ─────────────────────────────────────────────────────────────────────────────
   command:
-    description: 'Command: extract-changelog, validate-version, get-version, release-linux, release-linux-deb, release-linux-rpm, release-linux-apk, release-macos, release-windows, release-windows-msi'
+    description: 'Command to run'
     required: true
-
   version:
-    description: 'Version to extract (without v prefix)'
+    description: 'Version (without v prefix)'
     required: false
-
-  changelog:
-    description: 'Path to CHANGELOG.md'
+  target:
+    description: 'Rust target triple (e.g., x86_64-unknown-linux-gnu)'
     required: false
-    default: 'CHANGELOG.md'
-
-  output:
-    description: 'Output file for release notes'
+  binary-name:
+    description: 'Binary name (defaults to package name from Cargo.toml)'
     required: false
-    default: 'release_notes.md'
-
-  tag:
-    description: 'Git tag (defaults to GITHUB_REF_NAME)'
+  package:
+    description: 'Cargo package name (for workspace builds)'
     required: false
-
-  expected-version:
-    description: 'Expected version (defaults to NEXT_RELEASE_VERSION variable)'
-    required: false
-
   manifest:
     description: 'Path to Cargo.toml'
     required: false
     default: 'Cargo.toml'
-
-  target:
-    description: 'Rust target triple'
-    required: false
-
-  binary-name:
-    description: 'Binary name (defaults to package name)'
-    required: false
-
-  package:
-    description: 'Cargo package name for workspace builds'
-    required: false
-
-  no-default-features:
-    description: 'Build with --no-default-features'
-    required: false
-    default: 'false'
-
-  target-rustflags:
-    description: 'Extra RUSTFLAGS for the build'
-    required: false
-
-  archive:
-    description: 'Create archive (.tar.gz on Linux/macOS, .zip on Windows)'
-    required: false
-    default: 'false'
-
-  locked:
-    description: 'Build with --locked for reproducible builds'
-    required: false
-    default: 'false'
-
-  features:
-    description: 'Comma-separated list of Cargo features to enable'
-    required: false
-
-  include:
-    description: 'Comma-separated glob patterns for additional files to include in archive'
-    required: false
-
-  checksum:
-    description: 'Checksum algorithms to generate (sha256, sha512, b2)'
-    required: false
-    default: 'sha256'
-
-  profile:
-    description: 'Cargo build profile'
-    required: false
-    default: 'release'
-
-  dry-run:
-    description: 'Build without uploading (for testing)'
-    required: false
-    default: 'false'
-
   working-directory:
     description: 'Working directory for commands'
     required: false
     default: '.'
 
-  pkg-description:
-    description: 'Package description for .deb/.rpm'
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Build options - standard Cargo build flags
+  # ─────────────────────────────────────────────────────────────────────────────
+  features:
+    description: 'Cargo features to enable (comma-separated)'
+    required: false
+  profile:
+    description: 'Cargo build profile'
+    required: false
+    default: 'release'
+  locked:
+    description: 'Build with --locked for reproducible builds'
+    required: false
+    default: 'false'
+  no-default-features:
+    description: 'Build with --no-default-features'
+    required: false
+    default: 'false'
+  rustflags:
+    description: 'Extra RUSTFLAGS for the build'
     required: false
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Output options - control artifact generation
+  # ─────────────────────────────────────────────────────────────────────────────
+  archive:
+    description: 'Create archive (.tar.gz on Linux/macOS, .zip on Windows)'
+    required: false
+    default: 'false'
+  checksum:
+    description: 'Checksum algorithms (sha256, sha512, b2)'
+    required: false
+    default: 'sha256'
+  include:
+    description: 'Extra files to include in archive (glob patterns, comma-separated)'
+    required: false
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Changelog options - for extract-changelog command
+  # ─────────────────────────────────────────────────────────────────────────────
+  changelog:
+    description: 'Path to CHANGELOG.md'
+    required: false
+    default: 'CHANGELOG.md'
+  notes-output:
+    description: 'Output file for extracted release notes'
+    required: false
+    default: 'release_notes.md'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Version validation - for validate-version command
+  # ─────────────────────────────────────────────────────────────────────────────
+  tag:
+    description: 'Git tag to validate (defaults to GITHUB_REF_NAME)'
+    required: false
+  expected-version:
+    description: 'Expected version (defaults to NEXT_RELEASE_VERSION variable)'
+    required: false
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Package metadata (pkg-*) - shared across deb/rpm/apk/brew/aur/winget
+  # ─────────────────────────────────────────────────────────────────────────────
+  pkg-description:
+    description: 'Package description'
+    required: false
   pkg-maintainer:
     description: 'Package maintainer (format: Name <email>)'
     required: false
-
   pkg-homepage:
-    description: 'Package homepage URL'
+    description: 'Project homepage URL'
     required: false
-
   pkg-license:
-    description: 'Package license (e.g., MIT, Apache-2.0)'
+    description: 'License identifier (e.g., MIT, Apache-2.0)'
     required: false
-
   pkg-vendor:
-    description: 'Package vendor name'
+    description: 'Vendor/organization name'
     required: false
-
-  pkg-section:
-    description: 'Debian package section (default: utils)'
-    required: false
-    default: 'utils'
-
-  pkg-priority:
-    description: 'Debian package priority (default: optional)'
-    required: false
-    default: 'optional'
-
-  pkg-group:
-    description: 'RPM package group (default: Applications/System)'
-    required: false
-    default: 'Applications/System'
-
-  pkg-release:
-    description: 'Package release/revision number (default: 1 for RPM, 0 for APK)'
-    required: false
-
   pkg-depends:
-    description: 'Comma-separated package dependencies'
+    description: 'Runtime dependencies (comma-separated)'
     required: false
-
   pkg-recommends:
-    description: 'Comma-separated recommended packages'
+    description: 'Recommended packages (comma-separated)'
     required: false
-
   pkg-suggests:
-    description: 'Comma-separated suggested packages'
+    description: 'Suggested packages (comma-separated)'
     required: false
-
   pkg-conflicts:
-    description: 'Comma-separated conflicting packages'
+    description: 'Conflicting packages (comma-separated)'
     required: false
-
   pkg-replaces:
-    description: 'Comma-separated packages this replaces'
+    description: 'Packages this replaces (comma-separated)'
     required: false
-
   pkg-provides:
-    description: 'Comma-separated virtual packages this provides'
+    description: 'Virtual packages provided (comma-separated)'
     required: false
-
   pkg-contents:
     description: 'Extra files to include (format: src:dst,src:dst)'
     required: false
+  pkg-section:
+    description: 'Debian package section'
+    required: false
+    default: 'utils'
+  pkg-priority:
+    description: 'Debian package priority'
+    required: false
+    default: 'optional'
+  pkg-group:
+    description: 'RPM package group'
+    required: false
+    default: 'Applications/System'
+  pkg-release:
+    description: 'Package release/revision number'
+    required: false
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SBOM options (sbom-*) - for generate-sbom command
+  # ─────────────────────────────────────────────────────────────────────────────
+  sbom-format:
+    description: 'SBOM formats to generate (spdx, cyclonedx, or both)'
+    required: false
+    default: 'spdx,cyclonedx'
+  sbom-dir:
+    description: 'Output directory for SBOM files'
+    required: false
+    default: 'target/sbom'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Homebrew options (brew-*) - for generate-homebrew command
+  # ─────────────────────────────────────────────────────────────────────────────
+  brew-class:
+    description: 'Ruby class name for formula (auto-generated from binary name)'
+    required: false
+  brew-macos-arm64-url:
+    description: 'Download URL for macOS ARM64 artifact'
+    required: false
+  brew-macos-arm64-sha256:
+    description: 'SHA256 checksum for macOS ARM64 artifact'
+    required: false
+  brew-macos-x64-url:
+    description: 'Download URL for macOS x64 artifact'
+    required: false
+  brew-macos-x64-sha256:
+    description: 'SHA256 checksum for macOS x64 artifact'
+    required: false
+  brew-linux-arm64-url:
+    description: 'Download URL for Linux ARM64 artifact'
+    required: false
+  brew-linux-arm64-sha256:
+    description: 'SHA256 checksum for Linux ARM64 artifact'
+    required: false
+  brew-linux-x64-url:
+    description: 'Download URL for Linux x64 artifact'
+    required: false
+  brew-linux-x64-sha256:
+    description: 'SHA256 checksum for Linux x64 artifact'
+    required: false
+  brew-dir:
+    description: 'Output directory for formula file'
+    required: false
+    default: 'target/homebrew'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Signing options - for sign-artifact command
+  # ─────────────────────────────────────────────────────────────────────────────
+  artifact:
+    description: 'Path to artifact for Sigstore signing'
+    required: false
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Release body options - for format-release command
+  # ─────────────────────────────────────────────────────────────────────────────
+  artifacts-dir:
+    description: 'Directory containing release artifacts'
+    required: false
+    default: 'release'
+  notes-file:
+    description: 'Release notes file to include in body'
+    required: false
+    default: 'release_notes.md'
+  include-checksums:
+    description: 'Include checksums section in release body'
+    required: false
+    default: 'true'
+  include-signatures:
+    description: 'Include signatures section in release body'
+    required: false
+    default: 'true'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # AUR options (aur-*) - for generate-aur command
+  # ─────────────────────────────────────────────────────────────────────────────
+  aur-name:
+    description: 'AUR package name (defaults to binary name)'
+    required: false
+  aur-maintainer:
+    description: 'AUR maintainer (format: Name <email>)'
+    required: false
+  aur-source-url:
+    description: 'Source tarball URL (usually GitHub release tarball)'
+    required: false
+  aur-source-sha256:
+    description: 'SHA256 checksum of source tarball'
+    required: false
+  aur-makedepends:
+    description: 'Build-time dependencies (comma-separated)'
+    required: false
+    default: 'cargo'
+  aur-optdepends:
+    description: 'Optional dependencies (comma-separated)'
+    required: false
+  aur-dir:
+    description: 'Output directory for PKGBUILD and .SRCINFO'
+    required: false
+    default: 'target/aur'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Winget options (winget-*) - for generate-winget command
+  # ─────────────────────────────────────────────────────────────────────────────
+  winget-publisher:
+    description: 'Publisher display name'
+    required: false
+  winget-publisher-id:
+    description: 'Publisher ID (defaults to publisher name without spaces)'
+    required: false
+  winget-package-id:
+    description: 'Package ID (defaults to binary name)'
+    required: false
+  winget-license-url:
+    description: 'URL to license file'
+    required: false
+  winget-copyright:
+    description: 'Copyright notice'
+    required: false
+  winget-tags:
+    description: 'Package tags (comma-separated)'
+    required: false
+  winget-x64-url:
+    description: 'Download URL for Windows x64 artifact'
+    required: false
+  winget-x64-sha256:
+    description: 'SHA256 checksum for Windows x64 artifact'
+    required: false
+  winget-arm64-url:
+    description: 'Download URL for Windows ARM64 artifact'
+    required: false
+  winget-arm64-sha256:
+    description: 'SHA256 checksum for Windows ARM64 artifact'
+    required: false
+  winget-dir:
+    description: 'Output directory for manifest files'
+    required: false
+    default: 'target/winget'
 
 outputs:
   version:
@@ -213,6 +336,62 @@ outputs:
     description: 'JSON summary of the build'
     value: ${{ steps.run.outputs.summary }}
 
+  sbom_spdx:
+    description: 'Path to SPDX SBOM file'
+    value: ${{ steps.run.outputs.sbom_spdx }}
+
+  sbom_cyclonedx:
+    description: 'Path to CycloneDX SBOM file'
+    value: ${{ steps.run.outputs.sbom_cyclonedx }}
+
+  formula_file:
+    description: 'Path to Homebrew formula file'
+    value: ${{ steps.run.outputs.formula_file }}
+
+  formula_class:
+    description: 'Ruby class name of the Homebrew formula'
+    value: ${{ steps.run.outputs.formula_class }}
+
+  formula:
+    description: 'Homebrew formula content'
+    value: ${{ steps.run.outputs.formula }}
+
+  signature_path:
+    description: 'Path to signature file'
+    value: ${{ steps.run.outputs.signature_path }}
+
+  certificate_path:
+    description: 'Path to signing certificate'
+    value: ${{ steps.run.outputs.certificate_path }}
+
+  bundle_path:
+    description: 'Path to Sigstore bundle'
+    value: ${{ steps.run.outputs.bundle_path }}
+
+  body:
+    description: 'Formatted release body'
+    value: ${{ steps.run.outputs.body }}
+
+  pkgbuild_path:
+    description: 'Path to AUR PKGBUILD'
+    value: ${{ steps.run.outputs.pkgbuild_path }}
+
+  srcinfo_path:
+    description: 'Path to AUR .SRCINFO'
+    value: ${{ steps.run.outputs.srcinfo_path }}
+
+  pkgbuild:
+    description: 'AUR PKGBUILD content'
+    value: ${{ steps.run.outputs.pkgbuild }}
+
+  manifest_dir:
+    description: 'Winget manifest directory'
+    value: ${{ steps.run.outputs.manifest_dir }}
+
+  manifest_id:
+    description: 'Winget manifest ID'
+    value: ${{ steps.run.outputs.manifest_id }}
+
 runs:
   using: 'composite'
   steps:
@@ -234,7 +413,7 @@ runs:
             "extract-changelog" => {
                 $env.VERSION = $"${{ inputs.version }}"
                 $env.CHANGELOG_PATH = $"${{ inputs.changelog }}"
-                $env.OUTPUT_PATH = $"${{ inputs.output }}"
+                $env.OUTPUT_PATH = $"${{ inputs.notes-output }}"
                 nu $"($scripts)/extract-changelog.nu"
             }
             "validate-version" => {
@@ -246,13 +425,87 @@ runs:
                 $env.MANIFEST_PATH = $"${{ inputs.manifest }}"
                 nu $"($scripts)/get-version.nu"
             }
+            "generate-sbom" => {
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.sbom-format }}" != "" { $env.SBOM_FORMAT = "${{ inputs.sbom-format }}" }
+                if "${{ inputs.sbom-dir }}" != "" { $env.SBOM_OUTPUT_DIR = "${{ inputs.sbom-dir }}" }
+                nu $"($scripts)/generate-sbom.nu"
+            }
+            "generate-homebrew" => {
+                if "${{ inputs.version }}" != "" { $env.VERSION = "${{ inputs.version }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.pkg-description }}" != "" { $env.PKG_DESCRIPTION = "${{ inputs.pkg-description }}" }
+                if "${{ inputs.pkg-homepage }}" != "" { $env.PKG_HOMEPAGE = "${{ inputs.pkg-homepage }}" }
+                if "${{ inputs.pkg-license }}" != "" { $env.PKG_LICENSE = "${{ inputs.pkg-license }}" }
+                if "${{ inputs.brew-class }}" != "" { $env.HOMEBREW_FORMULA_CLASS = "${{ inputs.brew-class }}" }
+                if "${{ inputs.brew-macos-arm64-url }}" != "" { $env.HOMEBREW_MACOS_ARM64_URL = "${{ inputs.brew-macos-arm64-url }}" }
+                if "${{ inputs.brew-macos-arm64-sha256 }}" != "" { $env.HOMEBREW_MACOS_ARM64_SHA256 = "${{ inputs.brew-macos-arm64-sha256 }}" }
+                if "${{ inputs.brew-macos-x64-url }}" != "" { $env.HOMEBREW_MACOS_X64_URL = "${{ inputs.brew-macos-x64-url }}" }
+                if "${{ inputs.brew-macos-x64-sha256 }}" != "" { $env.HOMEBREW_MACOS_X64_SHA256 = "${{ inputs.brew-macos-x64-sha256 }}" }
+                if "${{ inputs.brew-linux-arm64-url }}" != "" { $env.HOMEBREW_LINUX_ARM64_URL = "${{ inputs.brew-linux-arm64-url }}" }
+                if "${{ inputs.brew-linux-arm64-sha256 }}" != "" { $env.HOMEBREW_LINUX_ARM64_SHA256 = "${{ inputs.brew-linux-arm64-sha256 }}" }
+                if "${{ inputs.brew-linux-x64-url }}" != "" { $env.HOMEBREW_LINUX_X64_URL = "${{ inputs.brew-linux-x64-url }}" }
+                if "${{ inputs.brew-linux-x64-sha256 }}" != "" { $env.HOMEBREW_LINUX_X64_SHA256 = "${{ inputs.brew-linux-x64-sha256 }}" }
+                if "${{ inputs.brew-dir }}" != "" { $env.HOMEBREW_OUTPUT_DIR = "${{ inputs.brew-dir }}" }
+                nu $"($scripts)/generate-homebrew.nu"
+            }
+            "generate-aur" => {
+                if "${{ inputs.version }}" != "" { $env.VERSION = "${{ inputs.version }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.aur-name }}" != "" { $env.AUR_PACKAGE_NAME = "${{ inputs.aur-name }}" }
+                if "${{ inputs.aur-maintainer }}" != "" { $env.AUR_MAINTAINER = "${{ inputs.aur-maintainer }}" }
+                if "${{ inputs.aur-source-url }}" != "" { $env.AUR_SOURCE_URL = "${{ inputs.aur-source-url }}" }
+                if "${{ inputs.aur-source-sha256 }}" != "" { $env.AUR_SOURCE_SHA256 = "${{ inputs.aur-source-sha256 }}" }
+                if "${{ inputs.aur-makedepends }}" != "" { $env.AUR_MAKEDEPENDS = "${{ inputs.aur-makedepends }}" }
+                if "${{ inputs.aur-optdepends }}" != "" { $env.AUR_OPTDEPENDS = "${{ inputs.aur-optdepends }}" }
+                if "${{ inputs.aur-dir }}" != "" { $env.AUR_OUTPUT_DIR = "${{ inputs.aur-dir }}" }
+                if "${{ inputs.pkg-description }}" != "" { $env.PKG_DESCRIPTION = "${{ inputs.pkg-description }}" }
+                if "${{ inputs.pkg-homepage }}" != "" { $env.PKG_HOMEPAGE = "${{ inputs.pkg-homepage }}" }
+                if "${{ inputs.pkg-license }}" != "" { $env.PKG_LICENSE = "${{ inputs.pkg-license }}" }
+                if "${{ inputs.pkg-depends }}" != "" { $env.PKG_DEPENDS = "${{ inputs.pkg-depends }}" }
+                if "${{ inputs.pkg-provides }}" != "" { $env.PKG_PROVIDES = "${{ inputs.pkg-provides }}" }
+                if "${{ inputs.pkg-conflicts }}" != "" { $env.PKG_CONFLICTS = "${{ inputs.pkg-conflicts }}" }
+                nu $"($scripts)/generate-aur.nu"
+            }
+            "generate-winget" => {
+                if "${{ inputs.version }}" != "" { $env.VERSION = "${{ inputs.version }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.winget-publisher }}" != "" { $env.WINGET_PUBLISHER = "${{ inputs.winget-publisher }}" }
+                if "${{ inputs.winget-publisher-id }}" != "" { $env.WINGET_PUBLISHER_ID = "${{ inputs.winget-publisher-id }}" }
+                if "${{ inputs.winget-package-id }}" != "" { $env.WINGET_PACKAGE_ID = "${{ inputs.winget-package-id }}" }
+                if "${{ inputs.winget-license-url }}" != "" { $env.WINGET_LICENSE_URL = "${{ inputs.winget-license-url }}" }
+                if "${{ inputs.winget-copyright }}" != "" { $env.WINGET_COPYRIGHT = "${{ inputs.winget-copyright }}" }
+                if "${{ inputs.winget-tags }}" != "" { $env.WINGET_TAGS = "${{ inputs.winget-tags }}" }
+                if "${{ inputs.winget-x64-url }}" != "" { $env.WINGET_X64_URL = "${{ inputs.winget-x64-url }}" }
+                if "${{ inputs.winget-x64-sha256 }}" != "" { $env.WINGET_X64_SHA256 = "${{ inputs.winget-x64-sha256 }}" }
+                if "${{ inputs.winget-arm64-url }}" != "" { $env.WINGET_ARM64_URL = "${{ inputs.winget-arm64-url }}" }
+                if "${{ inputs.winget-arm64-sha256 }}" != "" { $env.WINGET_ARM64_SHA256 = "${{ inputs.winget-arm64-sha256 }}" }
+                if "${{ inputs.winget-dir }}" != "" { $env.WINGET_OUTPUT_DIR = "${{ inputs.winget-dir }}" }
+                if "${{ inputs.pkg-description }}" != "" { $env.PKG_DESCRIPTION = "${{ inputs.pkg-description }}" }
+                if "${{ inputs.pkg-homepage }}" != "" { $env.PKG_HOMEPAGE = "${{ inputs.pkg-homepage }}" }
+                if "${{ inputs.pkg-license }}" != "" { $env.PKG_LICENSE = "${{ inputs.pkg-license }}" }
+                nu $"($scripts)/generate-winget.nu"
+            }
+            "sign-artifact" => {
+                if "${{ inputs.artifact }}" != "" { $env.ARTIFACT_PATH = "${{ inputs.artifact }}" }
+                nu $"($scripts)/sign-artifact.nu"
+            }
+            "format-release" => {
+                if "${{ inputs.version }}" != "" { $env.VERSION = "${{ inputs.version }}" }
+                if "${{ inputs.artifacts-dir }}" != "" { $env.ARTIFACTS_DIR = "${{ inputs.artifacts-dir }}" }
+                if "${{ inputs.notes-file }}" != "" { $env.RELEASE_NOTES_FILE = "${{ inputs.notes-file }}" }
+                if "${{ inputs.include-checksums }}" != "" { $env.INCLUDE_CHECKSUMS = "${{ inputs.include-checksums }}" }
+                if "${{ inputs.include-signatures }}" != "" { $env.INCLUDE_SIGNATURES = "${{ inputs.include-signatures }}" }
+                nu $"($scripts)/format-release.nu"
+            }
             "release-linux" => {
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
-                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
                 if "${{ inputs.archive }}" == "true" { $env.ARCHIVE = "true" }
                 if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
                 if "${{ inputs.include }}" != "" { $env.INCLUDE = "${{ inputs.include }}" }
@@ -266,7 +519,7 @@ runs:
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
-                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
                 if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
                 if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
                 if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
@@ -292,7 +545,7 @@ runs:
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
-                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
                 if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
                 if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
                 if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
@@ -318,7 +571,7 @@ runs:
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
-                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
                 if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
                 if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
                 if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
@@ -341,7 +594,7 @@ runs:
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
-                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
                 if "${{ inputs.archive }}" == "true" { $env.ARCHIVE = "true" }
                 if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
                 if "${{ inputs.include }}" != "" { $env.INCLUDE = "${{ inputs.include }}" }
@@ -349,13 +602,26 @@ runs:
                 if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
                 nu $"($scripts)/release-macos.nu"
             }
+            "release-macos-dmg" => {
+                if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
+                if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
+                if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
+                if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
+                if "${{ inputs.include }}" != "" { $env.INCLUDE = "${{ inputs.include }}" }
+                if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
+                if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
+                nu $"($scripts)/release-macos-dmg.nu"
+            }
             "release-windows" => {
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
-                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
                 if "${{ inputs.archive }}" == "true" { $env.ARCHIVE = "true" }
                 if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
                 if "${{ inputs.include }}" != "" { $env.INCLUDE = "${{ inputs.include }}" }
@@ -369,7 +635,7 @@ runs:
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
-                if "${{ inputs.target-rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.target-rustflags }}" }
+                if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
                 if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
                 if "${{ inputs.include }}" != "" { $env.INCLUDE = "${{ inputs.include }}" }
                 if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
