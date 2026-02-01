@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 
-use common.nu [get-cargo-info, output, output-multiline, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, build-summary]
+use common.nu [get-cargo-info, output, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, list-archivable-files, output-build-results]
 
 def main [] {
     check-rust-toolchain
@@ -48,31 +48,15 @@ def main [] {
         let artifact_path = $"($release_dir)/($artifact)"
         chmod +x $binary_path
         print $"(ansi green)Creating archive:(ansi reset) ($artifact)"
-        let files = (ls $release_dir
-            | where type == file
-            | where { |f| not ($f.name | str ends-with ".tar.gz") }
-            | where { |f| not ($f.name | str ends-with ".sha256") }
-            | where { |f| not ($f.name | str ends-with ".sha512") }
-            | where { |f| not ($f.name | str ends-with ".b2") }
-            | get name
-            | path basename)
+        let files = list-archivable-files $release_dir
         tar -C $release_dir -czf $artifact_path ...$files
 
         let checksums = generate-checksums $artifact_path
-
         print $"(char nl)(ansi green)Build artifacts:(ansi reset)"
         hr-line
         ls $release_dir | print
-
         print $"(ansi green)Created:(ansi reset) ($artifact)"
-        output "artifact" $artifact
-        output "artifact_path" $artifact_path
-        output "sha256" $checksums.sha256
-        output "sha512" $checksums.sha512
-        output "b2" $checksums.b2
-
-        let summary = build-summary $binary_name $version $target $artifact $artifact_path $checksums
-        output-multiline "summary" $summary
+        output-build-results $binary_name $version $target $artifact $artifact_path $checksums
     } else {
         let artifact = $artifact_base
         let artifact_path = $"($release_dir)/($artifact)"
@@ -80,19 +64,10 @@ def main [] {
         chmod +x $artifact_path
 
         let checksums = generate-checksums $artifact_path
-
         print $"(char nl)(ansi green)Build artifacts:(ansi reset)"
         hr-line
         ls $release_dir | print
-
         print $"(ansi green)Created:(ansi reset) ($artifact)"
-        output "artifact" $artifact
-        output "artifact_path" $artifact_path
-        output "sha256" $checksums.sha256
-        output "sha512" $checksums.sha512
-        output "b2" $checksums.b2
-
-        let summary = build-summary $binary_name $version $target $artifact $artifact_path $checksums
-        output-multiline "summary" $summary
+        output-build-results $binary_name $version $target $artifact $artifact_path $checksums
     }
 }

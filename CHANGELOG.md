@@ -10,6 +10,7 @@
  * Use MANIFEST_PATH in get-cargo-info
  * Include LICENSE files without suffix (e.g., LICENSE vs LICENSE-MIT)
  * Release workflow now triggers on pre-release tags
+ * Extract shared helpers to reduce code duplication
 
 ## v0.12.0 (Jan 31, 2026)
 

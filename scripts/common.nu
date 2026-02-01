@@ -43,6 +43,15 @@ export def copy-includes [dest: string] {
     }
 }
 
+# Lists files in a directory, excluding archives and checksums
+export def list-archivable-files [dir: string]: nothing -> list<string> {
+    ls $dir
+        | where type == file
+        | where { |f| not ($f.name =~ '\.(tar\.gz|zip|sha256|sha512|b2)$') }
+        | get name
+        | path basename
+}
+
 # Ensures Cargo.lock exists
 export def ensure-lockfile [] {
     if not ("Cargo.lock" | path exists) {
@@ -166,6 +175,25 @@ export def cargo-build [target: string, binary_name: string] {
     }
 
     cargo ...$args
+}
+
+# Outputs build results to GITHUB_OUTPUT
+export def output-build-results [
+    binary_name: string
+    version: string
+    target: string
+    artifact: string
+    artifact_path: string
+    checksums: record<sha256: string, sha512: string, b2: string>
+] {
+    output "artifact" $artifact
+    output "artifact_path" $artifact_path
+    output "sha256" $checksums.sha256
+    output "sha512" $checksums.sha512
+    output "b2" $checksums.b2
+
+    let summary = build-summary $binary_name $version $target $artifact $artifact_path $checksums
+    output-multiline "summary" $summary
 }
 
 # Generates a JSON summary of the build

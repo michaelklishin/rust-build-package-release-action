@@ -161,6 +161,14 @@ jobs:
           $env.EXPECTED_VERSION = "1.0.0-beta.1"
           nu scripts/validate-version.nu
 
+      - name: Test validate-version (build metadata)
+        shell: nu {0}
+        run: |
+          $env.NU_LIB_DIRS = ["scripts"]
+          $env.TAG = "v1.0.0+build.123"
+          $env.EXPECTED_VERSION = "1.0.0+build.123"
+          nu scripts/validate-version.nu
+
   test-action:
     name: Test Action
     runs-on: ubuntu-22.04

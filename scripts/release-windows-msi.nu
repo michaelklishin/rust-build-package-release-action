@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 
-use common.nu [get-cargo-info, output, output-multiline, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, build-summary]
+use common.nu [get-cargo-info, output, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, output-build-results]
 
 def main [] {
     check-rust-toolchain
@@ -56,21 +56,14 @@ def main [] {
     let artifact_path = $msi_path | str replace --all '\' '/'
     let artifact = $artifact_path | path basename
 
-    print $"(char nl)(ansi green)Build artifacts:(ansi reset)"
-    hr-line
-    ls target/wix | print
-
-    print $"(ansi green)Created:(ansi reset) ($artifact)"
     output "version" $version
     output "binary_name" $binary_name
     output "target" $target
     output "binary_path" ($binary_path | str replace --all '\' '/')
-    output "artifact" $artifact
-    output "artifact_path" $artifact_path
-    output "sha256" $checksums.sha256
-    output "sha512" $checksums.sha512
-    output "b2" $checksums.b2
 
-    let summary = build-summary $binary_name $version $target $artifact $artifact_path $checksums
-    output-multiline "summary" $summary
+    print $"(char nl)(ansi green)Build artifacts:(ansi reset)"
+    hr-line
+    ls target/wix | print
+    print $"(ansi green)Created:(ansi reset) ($artifact)"
+    output-build-results $binary_name $version $target $artifact $artifact_path $checksums
 }
