@@ -20,8 +20,7 @@ This action expects:
 
  1. **Changelog format**: versions as `## v{version} ({date})` headers
  2. **Tag format**: tags prefixed with `v` (e.g., `v1.2.3`, `v1.0.0-beta.1`)
- 3. **Version variable**: `NEXT_RELEASE_VERSION` GitHub Actions variable
- 4. **Versioning**: `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` format
+ 3. **Versioning**: `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` format
 
 ---
 
@@ -206,24 +205,25 @@ For `validate-version` command.
 | Input | Description | Default |
 |-------|-------------|---------|
 | `tag` | Git tag to validate | `GITHUB_REF_NAME` |
-| `expected-version` | Expected version to match | `NEXT_RELEASE_VERSION` variable |
+| `expected-version` | Expected version to match (required) | — |
 | `validate-cargo-toml` | Also verify Cargo.toml version matches tag | `false` |
 
 **Example: Validate version**
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: validate-version
-    # Uses GITHUB_REF_NAME and NEXT_RELEASE_VERSION by default
+    expected-version: ${{ vars.NEXT_RELEASE_VERSION }}
 ```
 
 **Example: Validate version with Cargo.toml check**
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: validate-version
+    expected-version: ${{ vars.NEXT_RELEASE_VERSION }}
     validate-cargo-toml: 'true'
 ```
 

@@ -481,7 +481,6 @@ runs:
         nu $"($env.GITHUB_ACTION_PATH)/scripts/dispatch.nu"
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
-        NEXT_RELEASE_VERSION: ${{ vars.NEXT_RELEASE_VERSION }}
         # All inputs passed as INPUT_* environment variables
         INPUT_COMMAND: ${{ inputs.command }}
         INPUT_VERSION: ${{ inputs.version }}

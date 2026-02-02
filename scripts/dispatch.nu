@@ -160,7 +160,7 @@ def setup-env [] {
 
 # Maps an INPUT_* env var to script env var if non-empty
 def map-env [from: string, to: string] {
-    let value = $env | get -i $from | default ""
+    let value = $env | get -o $from | default ""
     if $value != "" {
         load-env { $to: $value }
     }
@@ -168,7 +168,7 @@ def map-env [from: string, to: string] {
 
 # Maps a boolean INPUT_* env var to script env var
 def map-bool [from: string, to: string] {
-    let value = $env | get -i $from | default ""
+    let value = $env | get -o $from | default ""
     if $value == "true" {
         load-env { $to: "true" }
     }

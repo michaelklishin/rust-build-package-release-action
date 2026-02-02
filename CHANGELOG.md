@@ -2,7 +2,10 @@
 
 ## v1.2.0
 
-(no changes yet)
+### Bug Fixes
+
+ * Remove `vars.NEXT_RELEASE_VERSION` from composite action (the `vars.*` context is not available there)
+ * Use `get -o` instead of the deprecated `get -i` flag in dispatch.nu
 
 ## v1.1.0 (Feb 1, 2026)
 
