@@ -1,0 +1,264 @@
+# Full-featured release: multi-platform builds, packages, installers, SBOM, signing
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: validate
+        with:
+          command: validate-version
+
+      - uses: michaelklishin/rust-release-action@v0
+        with:
+          command: extract-changelog
+          version: ${{ steps.validate.outputs.version }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release_notes.md
+          retention-days: 1
+
+  sbom:
+    needs: validate
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        with:
+          command: generate-sbom
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: target/sbom/
+          retention-days: 90
+
+  build-linux:
+    needs: validate
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: release-linux
+          target: ${{ matrix.target }}
+          archive: 'true'
+          locked: 'true'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.target }}
+          path: |
+            ${{ steps.build.outputs.artifact_path }}
+            ${{ steps.build.outputs.artifact_path }}.sha256
+
+  build-macos:
+    needs: validate
+    runs-on: macos-14
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: release-macos
+          target: ${{ matrix.target }}
+          archive: 'true'
+          locked: 'true'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.target }}
+          path: |
+            ${{ steps.build.outputs.artifact_path }}
+            ${{ steps.build.outputs.artifact_path }}.sha256
+
+  build-windows:
+    needs: validate
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: release-windows
+          target: x86_64-pc-windows-msvc
+          archive: 'true'
+          locked: 'true'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64
+          path: |
+            ${{ steps.build.outputs.artifact_path }}
+            ${{ steps.build.outputs.artifact_path }}.sha256
+
+  packages-deb:
+    needs: validate
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: release-linux-deb
+          target: x86_64-unknown-linux-gnu
+          locked: 'true'
+          pkg-maintainer: 'Your Name <you@example.com>'
+          pkg-description: 'A CLI tool'
+          pkg-license: 'MIT'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb-x86_64
+          path: ${{ steps.build.outputs.artifact_path }}
+
+  packages-rpm:
+    needs: validate
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: release-linux-rpm
+          target: x86_64-unknown-linux-gnu
+          locked: 'true'
+          pkg-maintainer: 'Your Name <you@example.com>'
+          pkg-description: 'A CLI tool'
+          pkg-license: 'MIT'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm-x86_64
+          path: ${{ steps.build.outputs.artifact_path }}
+
+  installer-dmg:
+    needs: validate
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: release-macos-dmg
+          target: aarch64-apple-darwin
+          locked: 'true'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dmg-arm64
+          path: ${{ steps.build.outputs.artifact_path }}
+
+  sign:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: linux-*
+          path: artifacts
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: macos-*
+          path: artifacts
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: windows-*
+          path: artifacts
+          merge-multiple: true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signed
+          path: artifacts/
+
+  release:
+    needs: [validate, sbom, sign, packages-deb, packages-rpm, installer-dmg]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect files
+        run: |
+          mkdir -p release
+          find artifacts/signed -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" \) -exec cp {} release/ \;
+          find artifacts -type f \( -name "*.deb" -o -name "*.rpm" -o -name "*.dmg" \) -exec cp {} release/ \;
+          find artifacts/sbom -type f -name "*.json" -exec cp {} release/ \;
+          cp artifacts/release-notes/release_notes.md .
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: format
+        with:
+          command: format-release
+          version: ${{ needs.validate.outputs.version }}
+          artifacts-dir: release
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.format.outputs.body }}
+          files: release/*

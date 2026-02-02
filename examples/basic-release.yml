@@ -1,0 +1,43 @@
+# Single-platform Linux release with archive and checksums
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: validate
+        with:
+          command: validate-version
+
+      - uses: michaelklishin/rust-release-action@v0
+        with:
+          command: extract-changelog
+          version: ${{ steps.validate.outputs.version }}
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: release-linux
+          target: x86_64-unknown-linux-gnu
+          archive: 'true'
+          locked: 'true'
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: |
+            ${{ steps.build.outputs.artifact_path }}
+            ${{ steps.build.outputs.artifact_path }}.sha256

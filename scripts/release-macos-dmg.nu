@@ -1,9 +1,14 @@
 #!/usr/bin/env nu
 
-use common.nu [get-cargo-info, output, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, output-build-results]
+use common.nu [get-cargo-info, output, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, output-build-results, run-pre-build-hook]
 
 def main [] {
-    check-rust-toolchain
+    let skip_build = $env.SKIP_BUILD? | default "" | $in == "true"
+    let custom_binary_path = $env.BINARY_PATH? | default ""
+
+    if not $skip_build {
+        check-rust-toolchain
+    }
 
     let target = $env.TARGET? | default "aarch64-apple-darwin"
     let info = get-cargo-info
@@ -20,13 +25,21 @@ def main [] {
     print $"(ansi green)Building .dmg installer:(ansi reset) ($binary_name) v($version) for ($target)"
 
     let release_dir = $"target/($target)/release"
-    let binary_path = $"($release_dir)/($binary_name)"
+    let binary_path = if $skip_build and $custom_binary_path != "" {
+        $custom_binary_path
+    } else {
+        $"($release_dir)/($binary_name)"
+    }
 
     if not ($binary_path | path exists) {
+        if $skip_build {
+            error $"binary not found: ($binary_path)"
+        }
         print $"(ansi yellow)Binary not found, building...(ansi reset)"
         rm -rf $release_dir
         mkdir $release_dir
         ensure-lockfile
+        run-pre-build-hook
         rustup target add $target
         cargo-build $target $binary_name
     }
@@ -43,6 +56,10 @@ def main [] {
     chmod +x $"($dmg_dir)/($binary_name)"
     copy-docs $dmg_dir
     copy-includes $dmg_dir
+
+    # Create install and uninstall scripts
+    create-install-script $dmg_dir $binary_name
+    create-uninstall-script $dmg_dir $binary_name
 
     let vol_name = $"($binary_name)-($version)"
     let artifact = $"($binary_name)-($version)-($target).dmg"
@@ -86,4 +103,50 @@ def create-dmg [src_dir: string, vol_name: string, output_path: string] {
     }
 
     rm -f $temp_dmg
+}
+
+def create-install-script [dir: string, binary_name: string] {
+    let script = [
+        "#!/bin/bash"
+        $"# Install ($binary_name) to /usr/local/bin"
+        "set -e"
+        ""
+        "INSTALL_DIR=\"/usr/local/bin\""
+        $"BINARY=\"($binary_name)\""
+        "SCRIPT_DIR=\"$(cd \"$(dirname \"$0\")\" && pwd)\""
+        ""
+        "if [ ! -f \"$SCRIPT_DIR/$BINARY\" ]; then"
+        "    echo \"Error: $BINARY not found in $SCRIPT_DIR\""
+        "    exit 1"
+        "fi"
+        ""
+        "echo \"Installing $BINARY to $INSTALL_DIR...\""
+        "sudo mkdir -p \"$INSTALL_DIR\""
+        "sudo cp \"$SCRIPT_DIR/$BINARY\" \"$INSTALL_DIR/$BINARY\""
+        "sudo chmod +x \"$INSTALL_DIR/$BINARY\""
+        "echo \"Done. Run '$BINARY --help' to get started.\""
+    ] | str join "\n"
+    $script | save -f $"($dir)/install.sh"
+    chmod +x $"($dir)/install.sh"
+}
+
+def create-uninstall-script [dir: string, binary_name: string] {
+    let script = [
+        "#!/bin/bash"
+        $"# Uninstall ($binary_name) from /usr/local/bin"
+        "set -e"
+        ""
+        "INSTALL_DIR=\"/usr/local/bin\""
+        $"BINARY=\"($binary_name)\""
+        ""
+        "if [ -f \"$INSTALL_DIR/$BINARY\" ]; then"
+        "    echo \"Removing $BINARY from $INSTALL_DIR...\""
+        "    sudo rm -f \"$INSTALL_DIR/$BINARY\""
+        "    echo \"Done. $BINARY has been uninstalled.\""
+        "else"
+        "    echo \"$BINARY is not installed in $INSTALL_DIR\""
+        "fi"
+    ] | str join "\n"
+    $script | save -f $"($dir)/uninstall.sh"
+    chmod +x $"($dir)/uninstall.sh"
 }

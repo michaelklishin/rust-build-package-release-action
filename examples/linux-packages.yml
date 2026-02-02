@@ -1,0 +1,95 @@
+# Linux packages: .deb (Debian/Ubuntu), .rpm (RHEL/Fedora), .apk (Alpine)
+name: Linux Packages
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: michaelklishin/rust-release-action@v0
+        id: validate
+        with:
+          command: validate-version
+
+  packages:
+    needs: validate
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - format: deb
+            command: release-linux-deb
+            target: x86_64-unknown-linux-gnu
+          - format: deb
+            command: release-linux-deb
+            target: aarch64-unknown-linux-gnu
+          - format: rpm
+            command: release-linux-rpm
+            target: x86_64-unknown-linux-gnu
+          - format: rpm
+            command: release-linux-rpm
+            target: aarch64-unknown-linux-gnu
+          - format: apk
+            command: release-linux-apk
+            target: x86_64-unknown-linux-musl
+          - format: apk
+            command: release-linux-apk
+            target: aarch64-unknown-linux-musl
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: ${{ matrix.command }}
+          target: ${{ matrix.target }}
+          locked: 'true'
+          pkg-maintainer: 'Your Name <you@example.com>'
+          pkg-description: 'A command-line tool'
+          pkg-homepage: 'https://github.com/you/project'
+          pkg-license: 'MIT'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.format }}-${{ matrix.target }}
+          path: ${{ steps.build.outputs.artifact_path }}
+
+  release:
+    needs: [validate, packages]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: michaelklishin/rust-release-action@v0
+        with:
+          command: extract-changelog
+          version: ${{ needs.validate.outputs.version }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect packages
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "*.deb" -o -name "*.rpm" -o -name "*.apk" \) -exec cp {} release/ \;
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: release/*

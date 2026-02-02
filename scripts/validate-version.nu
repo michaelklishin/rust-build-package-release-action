@@ -1,10 +1,11 @@
 #!/usr/bin/env nu
 
-use common.nu [output, error]
+use common.nu [output, error, get-cargo-info]
 
 def main [] {
     let tag = $env.TAG? | default ($env.GITHUB_REF_NAME? | default "")
     let expected = $env.EXPECTED_VERSION? | default ($env.NEXT_RELEASE_VERSION? | default "")
+    let validate_cargo = $env.VALIDATE_CARGO_TOML? | default "" | $in == "true"
 
     if $tag == "" {
         print $"(ansi red)ERROR:(ansi reset) GITHUB_REF_NAME is not available"
@@ -51,5 +52,20 @@ def main [] {
         print $"  1. Update NEXT_RELEASE_VERSION to '($tag_version)' at: Settings > Secrets and variables > Actions > Variables"
         print $"  2. Or push the correct tag: git tag v($expected) && git push origin v($expected)"
         exit 1
+    }
+
+    if $validate_cargo {
+        let cargo_info = get-cargo-info
+        let cargo_version = $cargo_info.version
+        if $cargo_version == "" {
+            error "Could not read version from Cargo.toml"
+        }
+        if $cargo_version != $tag_version {
+            print $"(ansi red)ERROR:(ansi reset) Cargo.toml version (($cargo_version)) does not match tag (($tag_version))"
+            print ""
+            print $"Update Cargo.toml version to '($tag_version)' before tagging"
+            exit 1
+        }
+        print $"(ansi green)Cargo.toml validated:(ansi reset) version ($cargo_version) matches tag"
     }
 }

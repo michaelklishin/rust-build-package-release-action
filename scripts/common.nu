@@ -43,11 +43,12 @@ export def copy-includes [dest: string] {
     }
 }
 
-# Lists files in a directory, excluding archives and checksums
+# Lists files in a directory, excluding archives, checksums, signatures, and SBOMs
 export def list-archivable-files [dir: string]: nothing -> list<string> {
+    let exclude = '\.(tar\.gz|zip|sha256|sha512|b2|sig|pem|sigstore\.json|spdx\.json|cdx\.json)$'
     ls $dir
         | where type == file
-        | where { |f| not ($f.name =~ '\.(tar\.gz|zip|sha256|sha512|b2)$') }
+        | where { |f| not ($f.name =~ $exclude) }
         | get name
         | path basename
 }
@@ -125,6 +126,21 @@ export def generate-checksums [file_path: string]: nothing -> record<sha256: str
     }
 
     $checksums
+}
+
+# Runs the pre-build hook command if PRE_BUILD is set
+export def run-pre-build-hook [] {
+    let pre_build = $env.PRE_BUILD? | default ""
+    if $pre_build != "" {
+        print $"(ansi green)Running pre-build hook...(ansi reset)"
+        let result = do { bash -c $pre_build } | complete
+        if $result.exit_code != 0 {
+            error $"pre-build hook failed: ($result.stderr)"
+        }
+        if $result.stdout != "" {
+            print $result.stdout
+        }
+    }
 }
 
 # Builds with cargo rustc using the environment configuration
@@ -383,10 +399,25 @@ export def generate-sbom [output_dir: string, binary_name: string, version: stri
     let cyclonedx_path = $"($output_dir)/($binary_name)-($version).cdx.json"
 
     print $"(ansi green)Generating SPDX SBOM...(ansi reset)"
-    cargo sbom --output-format spdx_json_2_3 | save -f $spdx_path
+    let result = do { cargo sbom --output-format spdx_json_2_3 } | complete
+    if $result.exit_code != 0 {
+        error $"cargo-sbom SPDX generation failed: ($result.stderr)"
+    }
+    $result.stdout | save -f $spdx_path
 
     print $"(ansi green)Generating CycloneDX SBOM...(ansi reset)"
-    cargo sbom --output-format cyclone_dx_json_1_4 | save -f $cyclonedx_path
+    let result = do { cargo sbom --output-format cyclone_dx_json_1_4 } | complete
+    if $result.exit_code != 0 {
+        error $"cargo-sbom CycloneDX generation failed: ($result.stderr)"
+    }
+    $result.stdout | save -f $cyclonedx_path
+
+    if not ($spdx_path | path exists) {
+        error $"SPDX SBOM was not created: ($spdx_path)"
+    }
+    if not ($cyclonedx_path | path exists) {
+        error $"CycloneDX SBOM was not created: ($cyclonedx_path)"
+    }
 
     { spdx: $spdx_path, cyclonedx: $cyclonedx_path }
 }

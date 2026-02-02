@@ -1,9 +1,14 @@
 #!/usr/bin/env nu
 
-use common.nu [get-cargo-info, output, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, output-build-results]
+use common.nu [get-cargo-info, output, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, output-build-results, run-pre-build-hook]
 
 def main [] {
-    check-rust-toolchain
+    let skip_build = $env.SKIP_BUILD? | default "" | $in == "true"
+    let custom_binary_path = $env.BINARY_PATH? | default ""
+
+    if not $skip_build {
+        check-rust-toolchain
+    }
 
     let target = $env.TARGET? | default "x86_64-pc-windows-msvc"
     let info = get-cargo-info
@@ -20,12 +25,24 @@ def main [] {
     print $"(ansi green)Building(ansi reset) ($binary_name) v($version) MSI for ($target)"
 
     let release_dir = $"target/($target)/release"
-    rm -rf $release_dir
-    mkdir $release_dir
 
-    ensure-lockfile
-    rustup target add $target
-    cargo-build $target $binary_name
+    if $skip_build {
+        if $custom_binary_path == "" {
+            error "binary-path is required when skip-build is true"
+        }
+        if not ($custom_binary_path | path exists) {
+            error $"binary not found: ($custom_binary_path)"
+        }
+        mkdir $release_dir
+        cp $custom_binary_path $"($release_dir)/($binary_name).exe"
+    } else {
+        rm -rf $release_dir
+        mkdir $release_dir
+        ensure-lockfile
+        run-pre-build-hook
+        rustup target add $target
+        cargo-build $target $binary_name
+    }
 
     let binary_path = $"($release_dir)/($binary_name).exe"
     if not ($binary_path | path exists) {

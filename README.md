@@ -28,13 +28,55 @@ This action expects:
 ## Quick Start
 
 ```yaml
-# Build a release binary
+# Build a release binary (auto-selects platform from target)
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: release
+    target: x86_64-unknown-linux-gnu
+    archive: 'true'
+```
+
+Or use platform-specific commands:
+
+```yaml
 - uses: michaelklishin/rust-release-action@v0
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
     locked: 'true'
 ```
+
+### Minimal Complete Workflow
+
+Copy this to `.github/workflows/release.yml` to get started:
+
+```yaml
+name: Release
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: release
+          target: x86_64-unknown-linux-gnu
+          archive: 'true'
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: target/x86_64-unknown-linux-gnu/release/*.tar.gz
+```
+
+This builds a Linux binary, creates a `.tar.gz` archive with checksums, and uploads it to a GitHub Release. Add more targets using a [matrix strategy](#complete-workflow-example).
 
 ---
 
@@ -60,6 +102,9 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 
 | Input | Description | Default |
 |-------|-------------|---------|
+| `pre-build` | Shell command to run before `cargo build` (e.g., frontend build step) | — |
+| `skip-build` | Skip cargo build and use existing binary | `false` |
+| `binary-path` | Path to existing binary when `skip-build` is true | — |
 | `features` | Cargo features to enable | — |
 | `profile` | Cargo build profile | `release` |
 | `locked` | Build with `--locked` for reproducible builds | `false` |
@@ -76,6 +121,39 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
     no-default-features: 'true'
     features: 'rustls-tls'
     locked: 'true'
+```
+
+**Example: Pre-build hook for WASM/frontend projects**
+
+For projects that require a frontend build (WASM, npm, etc.) before `cargo build`:
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: release-linux
+    target: x86_64-unknown-linux-gnu
+    pre-build: 'cd frontend && npm install && npm run build'
+    archive: 'true'
+```
+
+**Example: Package pre-built binary (skip-build)**
+
+For Alpine/container workflows where the build happens in a separate step:
+
+```yaml
+# Build in Alpine container
+- name: Build in Alpine
+  run: |
+    cargo build --release --target x86_64-unknown-linux-musl
+
+# Package the pre-built binary
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: release-linux
+    target: x86_64-unknown-linux-musl
+    skip-build: 'true'
+    binary-path: 'target/x86_64-unknown-linux-musl/release/myapp'
+    archive: 'true'
 ```
 
 ### Output Options
@@ -102,12 +180,15 @@ Control artifact generation and checksums.
 
 ### Changelog Options
 
-For `extract-changelog` command.
+For `extract-changelog` and `validate-changelog` commands.
 
 | Input | Description | Default |
 |-------|-------------|---------|
+| `version` | Version to extract/validate | Auto-detected from git tag |
 | `changelog` | Path to CHANGELOG.md | `CHANGELOG.md` |
 | `notes-output` | Output file for extracted release notes | `release_notes.md` |
+
+**Note:** When `version` is not provided, it's auto-detected from `GITHUB_REF_NAME` (strips `v` prefix from tags like `v1.2.3`).
 
 **Example: Extract changelog**
 
@@ -115,8 +196,7 @@ For `extract-changelog` command.
 - uses: michaelklishin/rust-release-action@v0
   with:
     command: extract-changelog
-    version: '1.2.3'
-    changelog: 'CHANGELOG.md'
+    # version auto-detected from git tag (e.g., v1.2.3 -> 1.2.3)
 ```
 
 ### Version Validation
@@ -127,6 +207,7 @@ For `validate-version` command.
 |-------|-------------|---------|
 | `tag` | Git tag to validate | `GITHUB_REF_NAME` |
 | `expected-version` | Expected version to match | `NEXT_RELEASE_VERSION` variable |
+| `validate-cargo-toml` | Also verify Cargo.toml version matches tag | `false` |
 
 **Example: Validate version**
 
@@ -136,6 +217,60 @@ For `validate-version` command.
     command: validate-version
     # Uses GITHUB_REF_NAME and NEXT_RELEASE_VERSION by default
 ```
+
+**Example: Validate version with Cargo.toml check**
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: validate-version
+    validate-cargo-toml: 'true'
+```
+
+### Changelog Validation
+
+For `validate-changelog` command. Fails fast if no changelog entry exists for the release version.
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: validate-changelog
+    version: '1.2.3'  # Or omit to auto-detect from git tag
+```
+
+### Artifact Collection
+
+For `collect-artifacts` command. Scans a directory, computes checksums, and outputs structured data for Homebrew/Winget generation.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `artifacts-dir` | Directory containing artifacts | `artifacts` |
+| `base-url` | Base URL for download links | — |
+
+**Example: Collect artifacts and generate Homebrew formula**
+
+```yaml
+- uses: actions/download-artifact@v4
+  with:
+    path: artifacts
+
+- uses: michaelklishin/rust-release-action@v0
+  id: collect
+  with:
+    command: collect-artifacts
+    artifacts-dir: artifacts
+    base-url: 'https://github.com/${{ github.repository }}/releases/download/v${{ needs.validate.outputs.version }}'
+
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: generate-homebrew
+    version: ${{ needs.validate.outputs.version }}
+    brew-macos-arm64-sha256: ${{ steps.collect.outputs.macos_arm64_sha256 }}
+    brew-linux-x64-sha256: ${{ steps.collect.outputs.linux_x64_sha256 }}
+    # ... URLs constructed from base-url + artifact names
+```
+
+Outputs: `collection` (JSON), `checksums_file`, `macos_arm64_sha256`, `macos_x64_sha256`, `linux_arm64_sha256`, `linux_x64_sha256`, `windows_x64_sha256`, `windows_arm64_sha256`
 
 ### Package Metadata (`pkg-*`)
 
@@ -249,8 +384,11 @@ For `format-release` command.
 | `notes-file` | Release notes file to include | `release_notes.md` |
 | `include-checksums` | Include checksums section | `true` |
 | `include-signatures` | Include signatures section | `true` |
+| `homebrew-tap` | Homebrew tap for installation instructions | — |
+| `aur-package` | AUR package name for installation instructions | — |
+| `winget-id` | Winget package ID for installation instructions | — |
 
-**Example: Format release body**
+**Example: Format release body with installation instructions**
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -258,6 +396,9 @@ For `format-release` command.
     command: format-release
     version: '1.0.0'
     artifacts-dir: 'release'
+    homebrew-tap: 'you/tap/mytool'
+    aur-package: 'mytool'
+    winget-id: 'You.MyTool'
 ```
 
 ### AUR Options (`aur-*`)
@@ -326,9 +467,12 @@ For `generate-winget` command.
 
 | Command | Description |
 |---------|-------------|
+| `release` | Unified build command (auto-selects platform from target triple) |
 | `extract-changelog` | Extract release notes from CHANGELOG.md |
-| `validate-version` | Validate git tag matches expected version |
+| `validate-changelog` | Validate changelog has entry for version |
+| `validate-version` | Validate git tag matches expected version (optionally checks Cargo.toml) |
 | `get-version` | Get version from Cargo.toml |
+| `collect-artifacts` | Collect artifacts, compute checksums, generate SHA256SUMS |
 | `generate-sbom` | Generate SPDX and CycloneDX SBOMs |
 | `generate-homebrew` | Generate Homebrew formula |
 | `generate-aur` | Generate AUR PKGBUILD and .SRCINFO |
@@ -344,6 +488,13 @@ For `generate-winget` command.
 | `release-windows` | Build Windows binary or zip |
 | `release-windows-msi` | Build Windows MSI installer |
 
+**Note:** The unified `release` command auto-detects the platform from the `target` input:
+- Targets containing `linux` use `release-linux`
+- Targets containing `darwin` or `apple` use `release-macos`
+- Targets containing `windows` use `release-windows`
+
+This simplifies matrix builds by eliminating the need for per-platform command mapping.
+
 ---
 
 ## Outputs
@@ -353,8 +504,10 @@ For `generate-winget` command.
 | `version` | Version from get-version, validate-version, or release commands |
 | `release_notes_file` | Path to release notes file |
 | `release_notes` | Release notes content |
-| `artifact` | Artifact filename |
-| `artifact_path` | Full path to artifact |
+| `artifact` | Artifact filename (archive when archive=true, bare binary otherwise) |
+| `artifact_path` | Full path to artifact (archive when archive=true, bare binary otherwise) |
+| `bare_artifact` | Bare binary filename (always produced) |
+| `bare_artifact_path` | Full path to bare binary (always produced) |
 | `binary_name` | Binary name that was built |
 | `binary_path` | Path to raw binary (before archiving) |
 | `target` | Target triple used for the build |

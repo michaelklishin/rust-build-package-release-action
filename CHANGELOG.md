@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.0.0 (Feb 1, 2026)
+
+### New Features
+
+ * Introduce a unified `release` command that auto-selects the platform from the target triple
+ * A new `validate-changelog` command for fail-fast changelog validation
+ * A new `collect-artifacts` command with consolidated SHA256SUMS generation
+ * A new `validate-cargo-toml` option for the `validate-version` command
+ * Pre-build hooks via the `pre-build` input for WASM/frontend projects
+ * Skip-build mode via the `skip-build` input for container workflows
+ * Version auto-detection from git tags for the `extract-changelog` and `validate-changelog` commands
+ * Minimal quickstart workflow in the README
+
+### Enhancements
+
+ * Simplified the multi-platform matrix (no per-platform command mapping needed)
+ * Added the `examples/` directory with workflow templates
+
 ## v0.13.0 (Feb 1, 2026)
 
 ### Bug Fixes

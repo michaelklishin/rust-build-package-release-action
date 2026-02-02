@@ -37,6 +37,16 @@ inputs:
   # ─────────────────────────────────────────────────────────────────────────────
   # Build options - standard Cargo build flags
   # ─────────────────────────────────────────────────────────────────────────────
+  pre-build:
+    description: 'Shell command to run before cargo build (e.g., frontend build step)'
+    required: false
+  skip-build:
+    description: 'Skip cargo build and use existing binary (for container/Alpine workflows)'
+    required: false
+    default: 'false'
+  binary-path:
+    description: 'Path to existing binary when skip-build is true'
+    required: false
   features:
     description: 'Cargo features to enable (comma-separated)'
     required: false
@@ -92,6 +102,10 @@ inputs:
   expected-version:
     description: 'Expected version (defaults to NEXT_RELEASE_VERSION variable)'
     required: false
+  validate-cargo-toml:
+    description: 'Also validate that Cargo.toml version matches the tag'
+    required: false
+    default: 'false'
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Package metadata (pkg-*) - shared across deb/rpm/apk/brew/aur/winget
@@ -203,6 +217,13 @@ inputs:
     required: false
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Artifact collection options - for collect-artifacts command
+  # ─────────────────────────────────────────────────────────────────────────────
+  base-url:
+    description: 'Base URL for artifact downloads (e.g., https://github.com/user/repo/releases/download/v1.0.0)'
+    required: false
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Release body options - for format-release command
   # ─────────────────────────────────────────────────────────────────────────────
   artifacts-dir:
@@ -221,6 +242,15 @@ inputs:
     description: 'Include signatures section in release body'
     required: false
     default: 'true'
+  homebrew-tap:
+    description: 'Homebrew tap for installation instructions (e.g., user/tap/formula)'
+    required: false
+  aur-package:
+    description: 'AUR package name for installation instructions'
+    required: false
+  winget-id:
+    description: 'Winget package ID for installation instructions'
+    required: false
 
   # ─────────────────────────────────────────────────────────────────────────────
   # AUR options (aur-*) - for generate-aur command
@@ -301,12 +331,20 @@ outputs:
     value: ${{ steps.run.outputs.release_notes }}
 
   artifact:
-    description: 'Artifact filename'
+    description: 'Artifact filename (archive when archive=true, bare binary otherwise)'
     value: ${{ steps.run.outputs.artifact }}
 
   artifact_path:
-    description: 'Full path to artifact'
+    description: 'Full path to artifact (archive when archive=true, bare binary otherwise)'
     value: ${{ steps.run.outputs.artifact_path }}
+
+  bare_artifact:
+    description: 'Bare binary filename (always produced)'
+    value: ${{ steps.run.outputs.bare_artifact }}
+
+  bare_artifact_path:
+    description: 'Full path to bare binary (always produced)'
+    value: ${{ steps.run.outputs.bare_artifact_path }}
 
   binary_name:
     description: 'Binary name that was built'
@@ -392,6 +430,39 @@ outputs:
     description: 'Winget manifest ID'
     value: ${{ steps.run.outputs.manifest_id }}
 
+  # collect-artifacts outputs
+  collection:
+    description: 'JSON collection of artifacts with checksums and URLs'
+    value: ${{ steps.run.outputs.collection }}
+
+  checksums_file:
+    description: 'Path to consolidated SHA256SUMS file'
+    value: ${{ steps.run.outputs.checksums_file }}
+
+  macos_arm64_sha256:
+    description: 'SHA256 of macOS ARM64 artifact'
+    value: ${{ steps.run.outputs.macos_arm64_sha256 }}
+
+  macos_x64_sha256:
+    description: 'SHA256 of macOS x64 artifact'
+    value: ${{ steps.run.outputs.macos_x64_sha256 }}
+
+  linux_arm64_sha256:
+    description: 'SHA256 of Linux ARM64 artifact'
+    value: ${{ steps.run.outputs.linux_arm64_sha256 }}
+
+  linux_x64_sha256:
+    description: 'SHA256 of Linux x64 artifact'
+    value: ${{ steps.run.outputs.linux_x64_sha256 }}
+
+  windows_x64_sha256:
+    description: 'SHA256 of Windows x64 artifact'
+    value: ${{ steps.run.outputs.windows_x64_sha256 }}
+
+  windows_arm64_sha256:
+    description: 'SHA256 of Windows ARM64 artifact'
+    value: ${{ steps.run.outputs.windows_arm64_sha256 }}
+
 runs:
   using: 'composite'
   steps:
@@ -411,14 +482,34 @@ runs:
 
         match $"${{ inputs.command }}" {
             "extract-changelog" => {
-                $env.VERSION = $"${{ inputs.version }}"
+                # Auto-detect version from tag if not provided
+                $env.VERSION = if "${{ inputs.version }}" != "" {
+                    "${{ inputs.version }}"
+                } else if ($env.GITHUB_REF_NAME? | default "" | str starts-with "v") {
+                    $env.GITHUB_REF_NAME | str substring 1..
+                } else {
+                    ""
+                }
                 $env.CHANGELOG_PATH = $"${{ inputs.changelog }}"
                 $env.OUTPUT_PATH = $"${{ inputs.notes-output }}"
                 nu $"($scripts)/extract-changelog.nu"
             }
+            "validate-changelog" => {
+                # Auto-detect version from tag if not provided
+                $env.VERSION = if "${{ inputs.version }}" != "" {
+                    "${{ inputs.version }}"
+                } else if ($env.GITHUB_REF_NAME? | default "" | str starts-with "v") {
+                    $env.GITHUB_REF_NAME | str substring 1..
+                } else {
+                    ""
+                }
+                $env.CHANGELOG_PATH = $"${{ inputs.changelog }}"
+                nu $"($scripts)/validate-changelog.nu"
+            }
             "validate-version" => {
                 $env.TAG = if "${{ inputs.tag }}" != "" { "${{ inputs.tag }}" } else { $env.GITHUB_REF_NAME? | default "" }
                 $env.EXPECTED_VERSION = if "${{ inputs.expected-version }}" != "" { "${{ inputs.expected-version }}" } else { $env.NEXT_RELEASE_VERSION? | default "" }
+                if "${{ inputs.validate-cargo-toml }}" == "true" { $env.VALIDATE_CARGO_TOML = "true" }
                 nu $"($scripts)/validate-version.nu"
             }
             "get-version" => {
@@ -497,12 +588,41 @@ runs:
                 if "${{ inputs.notes-file }}" != "" { $env.RELEASE_NOTES_FILE = "${{ inputs.notes-file }}" }
                 if "${{ inputs.include-checksums }}" != "" { $env.INCLUDE_CHECKSUMS = "${{ inputs.include-checksums }}" }
                 if "${{ inputs.include-signatures }}" != "" { $env.INCLUDE_SIGNATURES = "${{ inputs.include-signatures }}" }
+                if "${{ inputs.homebrew-tap }}" != "" { $env.HOMEBREW_TAP = "${{ inputs.homebrew-tap }}" }
+                if "${{ inputs.aur-package }}" != "" { $env.AUR_PACKAGE = "${{ inputs.aur-package }}" }
+                if "${{ inputs.winget-id }}" != "" { $env.WINGET_ID = "${{ inputs.winget-id }}" }
                 nu $"($scripts)/format-release.nu"
+            }
+            "collect-artifacts" => {
+                if "${{ inputs.artifacts-dir }}" != "" { $env.ARTIFACTS_DIR = "${{ inputs.artifacts-dir }}" }
+                if "${{ inputs.base-url }}" != "" { $env.BASE_URL = "${{ inputs.base-url }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                nu $"($scripts)/collect-artifacts.nu"
+            }
+            "release" => {
+                if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
+                if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
+                if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.pre-build }}" != "" { $env.PRE_BUILD = "${{ inputs.pre-build }}" }
+                if "${{ inputs.skip-build }}" == "true" { $env.SKIP_BUILD = "true" }
+                if "${{ inputs.binary-path }}" != "" { $env.BINARY_PATH = "${{ inputs.binary-path }}" }
+                if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
+                if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
+                if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
+                if "${{ inputs.archive }}" == "true" { $env.ARCHIVE = "true" }
+                if "${{ inputs.locked }}" == "true" { $env.LOCKED = "true" }
+                if "${{ inputs.include }}" != "" { $env.INCLUDE = "${{ inputs.include }}" }
+                if "${{ inputs.checksum }}" != "" { $env.CHECKSUM = "${{ inputs.checksum }}" }
+                if "${{ inputs.profile }}" != "" { $env.PROFILE = "${{ inputs.profile }}" }
+                nu $"($scripts)/release.nu"
             }
             "release-linux" => {
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.pre-build }}" != "" { $env.PRE_BUILD = "${{ inputs.pre-build }}" }
+                if "${{ inputs.skip-build }}" == "true" { $env.SKIP_BUILD = "true" }
+                if "${{ inputs.binary-path }}" != "" { $env.BINARY_PATH = "${{ inputs.binary-path }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
                 if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
@@ -517,6 +637,9 @@ runs:
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.pre-build }}" != "" { $env.PRE_BUILD = "${{ inputs.pre-build }}" }
+                if "${{ inputs.skip-build }}" == "true" { $env.SKIP_BUILD = "true" }
+                if "${{ inputs.binary-path }}" != "" { $env.BINARY_PATH = "${{ inputs.binary-path }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
                 if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
@@ -543,6 +666,9 @@ runs:
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.pre-build }}" != "" { $env.PRE_BUILD = "${{ inputs.pre-build }}" }
+                if "${{ inputs.skip-build }}" == "true" { $env.SKIP_BUILD = "true" }
+                if "${{ inputs.binary-path }}" != "" { $env.BINARY_PATH = "${{ inputs.binary-path }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
                 if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
@@ -569,6 +695,9 @@ runs:
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.pre-build }}" != "" { $env.PRE_BUILD = "${{ inputs.pre-build }}" }
+                if "${{ inputs.skip-build }}" == "true" { $env.SKIP_BUILD = "true" }
+                if "${{ inputs.binary-path }}" != "" { $env.BINARY_PATH = "${{ inputs.binary-path }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
                 if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
@@ -592,6 +721,9 @@ runs:
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.pre-build }}" != "" { $env.PRE_BUILD = "${{ inputs.pre-build }}" }
+                if "${{ inputs.skip-build }}" == "true" { $env.SKIP_BUILD = "true" }
+                if "${{ inputs.binary-path }}" != "" { $env.BINARY_PATH = "${{ inputs.binary-path }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
                 if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
@@ -606,6 +738,9 @@ runs:
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.pre-build }}" != "" { $env.PRE_BUILD = "${{ inputs.pre-build }}" }
+                if "${{ inputs.skip-build }}" == "true" { $env.SKIP_BUILD = "true" }
+                if "${{ inputs.binary-path }}" != "" { $env.BINARY_PATH = "${{ inputs.binary-path }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
                 if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
@@ -619,6 +754,9 @@ runs:
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.pre-build }}" != "" { $env.PRE_BUILD = "${{ inputs.pre-build }}" }
+                if "${{ inputs.skip-build }}" == "true" { $env.SKIP_BUILD = "true" }
+                if "${{ inputs.binary-path }}" != "" { $env.BINARY_PATH = "${{ inputs.binary-path }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
                 if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }
@@ -633,6 +771,9 @@ runs:
                 if "${{ inputs.target }}" != "" { $env.TARGET = "${{ inputs.target }}" }
                 if "${{ inputs.binary-name }}" != "" { $env.BINARY_NAME = "${{ inputs.binary-name }}" }
                 if "${{ inputs.package }}" != "" { $env.PACKAGE = "${{ inputs.package }}" }
+                if "${{ inputs.pre-build }}" != "" { $env.PRE_BUILD = "${{ inputs.pre-build }}" }
+                if "${{ inputs.skip-build }}" == "true" { $env.SKIP_BUILD = "true" }
+                if "${{ inputs.binary-path }}" != "" { $env.BINARY_PATH = "${{ inputs.binary-path }}" }
                 if "${{ inputs.no-default-features }}" == "true" { $env.NO_DEFAULT_FEATURES = "true" }
                 if "${{ inputs.features }}" != "" { $env.FEATURES = "${{ inputs.features }}" }
                 if "${{ inputs.rustflags }}" != "" { $env.TARGET_RUSTFLAGS = "${{ inputs.rustflags }}" }

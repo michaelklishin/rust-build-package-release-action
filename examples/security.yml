@@ -1,0 +1,136 @@
+# SBOM generation and Sigstore signing for supply chain security
+name: Secure Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+  id-token: write  # Required for Sigstore OIDC
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: michaelklishin/rust-release-action@v0
+        id: validate
+        with:
+          command: validate-version
+
+  sbom:
+    needs: validate
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: sbom
+        with:
+          command: generate-sbom
+          sbom-format: 'spdx,cyclonedx'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: |
+            ${{ steps.sbom.outputs.sbom_spdx }}
+            ${{ steps.sbom.outputs.sbom_cyclonedx }}
+
+  build:
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+            command: release-linux
+          - target: aarch64-apple-darwin
+            os: macos-14
+            command: release-macos
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: ${{ matrix.command }}
+          target: ${{ matrix.target }}
+          archive: 'true'
+          locked: 'true'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.target }}
+          path: ${{ steps.build.outputs.artifact_path }}
+
+  sign:
+    needs: [validate, build]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p release
+          find artifacts/build-* -type f -name "*.tar.gz" -exec cp {} release/ \;
+
+      # Uncomment to sign each artifact
+      # - uses: michaelklishin/rust-release-action@v0
+      #   with:
+      #     command: sign-artifact
+      #     artifact: release/myapp-*.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signed
+          path: release/
+
+  release:
+    needs: [validate, sbom, sign]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: michaelklishin/rust-release-action@v0
+        with:
+          command: extract-changelog
+          version: ${{ needs.validate.outputs.version }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect files
+        run: |
+          mkdir -p release
+          find artifacts/signed -type f -name "*.tar.gz" -exec cp {} release/ \;
+          cp artifacts/sbom/*.json release/
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: format
+        with:
+          command: format-release
+          version: ${{ needs.validate.outputs.version }}
+          artifacts-dir: release
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.format.outputs.body }}
+          files: release/*

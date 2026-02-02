@@ -1,9 +1,14 @@
 #!/usr/bin/env nu
 
-use common.nu [get-cargo-info, output, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, output-build-results, check-nfpm, install-linux-cross-deps, nfpm-base-config, nfpm-contents-section, nfpm-dependencies-section]
+use common.nu [get-cargo-info, output, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, output-build-results, check-nfpm, install-linux-cross-deps, nfpm-base-config, nfpm-contents-section, nfpm-dependencies-section, run-pre-build-hook]
 
 def main [] {
-    check-rust-toolchain
+    let skip_build = $env.SKIP_BUILD? | default "" | $in == "true"
+    let custom_binary_path = $env.BINARY_PATH? | default ""
+
+    if not $skip_build {
+        check-rust-toolchain
+    }
     check-nfpm
 
     let target = $env.TARGET? | default "x86_64-unknown-linux-gnu"
@@ -23,13 +28,21 @@ def main [] {
     print $"(ansi green)Building .deb package:(ansi reset) ($binary_name) v($version) for ($arch)"
 
     let release_dir = $"target/($target)/release"
-    let binary_path = $"($release_dir)/($binary_name)"
+    let binary_path = if $skip_build and $custom_binary_path != "" {
+        $custom_binary_path
+    } else {
+        $"($release_dir)/($binary_name)"
+    }
 
     if not ($binary_path | path exists) {
+        if $skip_build {
+            error $"binary not found: ($binary_path)"
+        }
         print $"(ansi yellow)Binary not found, building...(ansi reset)"
         rm -rf $release_dir
         mkdir $release_dir
         ensure-lockfile
+        run-pre-build-hook
         install-linux-cross-deps $target
         cargo-build $target $binary_name
     }

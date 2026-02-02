@@ -27,6 +27,10 @@ def main [] {
     let conflicts = $env.PKG_CONFLICTS? | default ""
     let binary_name = $env.BINARY_NAME? | default $pkg_name
 
+    if $source_url != "" and $source_sha256 == "" {
+        print $"(ansi yellow)Warning:(ansi reset) source URL provided without SHA256, PKGBUILD will use SKIP"
+    }
+
     print $"(ansi green)Generating AUR PKGBUILD:(ansi reset) ($pkg_name) v($version)"
 
     let pkgbuild = generate-pkgbuild {

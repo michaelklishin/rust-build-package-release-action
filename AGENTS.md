@@ -36,7 +36,10 @@ See `CONTRIBUTING.md` as well.
  * `action.yml`: GitHub Action definition
  * `scripts/common.nu`: shared utilities (`cargo-build`, `generate-checksums`, `output-build-results`)
  * `scripts/extract-changelog.nu`: extracts release details from a change log file (see `rabbitmqadmin-ng` for example)
+ * `scripts/validate-changelog.nu`: validates that a changelog entry exists for a version
  * `scripts/validate-version.nu`: version validation logic, including pre-release versions
+ * `scripts/collect-artifacts.nu`: collects artifacts, computes checksums, outputs structured data for Homebrew/Winget
+ * `scripts/release.nu`: unified release command that auto-selects platform from target triple
  * `scripts/get-version.nu`: reads version from `Cargo.toml`
  * `scripts/generate-sbom.nu`: generates SPDX and CycloneDX SBOMs via cargo-sbom
  * `scripts/release-linux.nu`: Linux build script
@@ -62,10 +65,10 @@ See `CONTRIBUTING.md` as well.
  * Avoid multiline string interpolation in heredoc style; use array-based string building with `| str join "\n"` instead
  * Use `def main []` as script entry point
  * Use `$env.VARIABLE?` with `| default ""` for optional env vars
- * Exit with code 1 on errors, produce reasoanbly helpful messages
+ * Exit with code 1 on errors, produce brief but helpful messages
  * Write to `$env.GITHUB_OUTPUT` for action outputs
  * Only add important comments
- * For regex patterns in `where` clauses, assign the pattern to a variable first to avoid nufmt corruption
+ * For regex patterns in `where` clauses, assign the pattern to a variable first to avoid breaking `nufmt`
 
 ## Git Conventions
 

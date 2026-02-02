@@ -1,0 +1,96 @@
+# Cross-platform builds for Linux, macOS, and Windows
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: michaelklishin/rust-release-action@v0
+        id: validate
+        with:
+          command: validate-version
+
+      - uses: michaelklishin/rust-release-action@v0
+        with:
+          command: extract-changelog
+          version: ${{ steps.validate.outputs.version }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release_notes.md
+
+  build:
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: x86_64-apple-darwin
+            os: macos-14
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      # The unified `release` command auto-selects the platform script from target
+      - uses: michaelklishin/rust-release-action@v0
+        id: build
+        with:
+          command: release
+          target: ${{ matrix.target }}
+          archive: 'true'
+          locked: 'true'
+          checksum: 'sha256,sha512'
+
+      # Upload both bare binary and archive (for pipeline compatibility)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            ${{ steps.build.outputs.bare_artifact_path }}
+            ${{ steps.build.outputs.bare_artifact_path }}.sha256
+            ${{ steps.build.outputs.artifact_path }}
+            ${{ steps.build.outputs.artifact_path }}.sha256
+            ${{ steps.build.outputs.artifact_path }}.sha512
+
+  release:
+    needs: [validate, build]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect files
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" -o -name "*.sha512" \) -exec cp {} release/ \;
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: artifacts/release-notes/release_notes.md
+          files: release/*
