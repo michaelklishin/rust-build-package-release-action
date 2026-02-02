@@ -150,7 +150,8 @@ def list-release-artifacts [dir: string]: nothing -> table {
 }
 
 # Formats file size in human-readable format
-export def format-size [bytes: int]: nothing -> string {
+export def format-size [bytes]: nothing -> string {
+    let bytes = $bytes | into int
     if $bytes < 1024 { return $"($bytes) B" }
     let kb = $bytes / 1024
     if $kb < 1024 { return $"($kb | math round -p 1) KB" }
