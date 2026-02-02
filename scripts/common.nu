@@ -143,11 +143,32 @@ export def run-pre-build-hook [] {
     }
 }
 
+# Checks if a Cargo feature exists in the project
+def has-cargo-feature [feature: string]: nothing -> bool {
+    let package = $env.PACKAGE? | default ""
+    let args = if $package != "" {
+        ["metadata" "--format-version" "1" "--no-deps" "--package" $package]
+    } else {
+        ["metadata" "--format-version" "1" "--no-deps"]
+    }
+    let metadata = do { cargo ...$args } | complete
+    if $metadata.exit_code != 0 {
+        return false
+    }
+    let data = $metadata.stdout | from json
+    let pkg = if $package != "" {
+        $data.packages | where name == $package | first
+    } else {
+        $data.packages | first
+    }
+    $feature in ($pkg.features | columns)
+}
+
 # Builds with cargo rustc using the environment configuration
 export def cargo-build [target: string, binary_name: string] {
     let package = $env.PACKAGE? | default ""
     let no_default_features = $env.NO_DEFAULT_FEATURES? | default "" | $in == "true"
-    let features = $env.FEATURES? | default ""
+    mut features = $env.FEATURES? | default ""
     let locked = $env.LOCKED? | default "" | $in == "true"
     let profile = $env.PROFILE? | default "release"
     let target_rustflags = $env.TARGET_RUSTFLAGS? | default ""
@@ -159,6 +180,12 @@ export def cargo-build [target: string, binary_name: string] {
     # For musl targets, enables static linking
     if ($target =~ "musl") and ($env.RUSTFLAGS? | default "" | is-empty) {
         $env.RUSTFLAGS = "-C target-feature=+crt-static"
+    }
+
+    # For musl targets, auto-enable mimalloc feature if available (improves performance)
+    if ($target =~ "musl") and (not ($features =~ "mimalloc")) and (has-cargo-feature "mimalloc") {
+        print $"(ansi green)Enabling mimalloc feature for musl build(ansi reset)"
+        $features = if $features == "" { "mimalloc" } else { $"($features),mimalloc" }
     }
 
     mut args = ["rustc" "--target" $target "-q"]

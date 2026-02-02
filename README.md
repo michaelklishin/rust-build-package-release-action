@@ -109,7 +109,7 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 | `no-default-features` | Build with `--no-default-features` | `false` |
 | `rustflags` | Extra RUSTFLAGS for the build | — |
 
-**Example: Static musl build with specific features**
+#### Example: Static musl build with specific features
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -123,7 +123,7 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 
 **Tip:** For musl builds, consider using [mimalloc](https://crates.io/crates/mimalloc) as the global allocator for improved performance.
 
-**Example: Pre-build hook for WASM/frontend projects**
+#### Example: Pre-build hook for WASM/frontend projects
 
 For projects that require a frontend build (WASM, npm, etc.) before `cargo build`:
 
@@ -136,7 +136,7 @@ For projects that require a frontend build (WASM, npm, etc.) before `cargo build
     archive: 'true'
 ```
 
-**Example: Package pre-built binary (skip-build)**
+#### Example: Package pre-built binary (skip-build)
 
 For Alpine/container workflows where the build happens in a separate step:
 
@@ -166,7 +166,7 @@ Control artifact generation and checksums.
 | `checksum` | Checksum algorithms: `sha256`, `sha512`, `b2` (comma-separated) | `sha256` |
 | `include` | Extra files to include in archive (glob patterns, comma-separated) | — |
 
-**Example: Archive with multiple checksums**
+#### Example: Archive with multiple checksums
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -190,7 +190,7 @@ For `extract-changelog` and `validate-changelog` commands.
 
 **Note:** When `version` is not provided, it's auto-detected from `GITHUB_REF_NAME` (strips `v` prefix from tags like `v1.2.3`).
 
-**Example: Extract changelog**
+#### Example: Extract changelog
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -209,7 +209,7 @@ For `validate-version` command.
 | `expected-version` | Expected version to match (required) | — |
 | `validate-cargo-toml` | Also verify Cargo.toml version matches tag | `false` |
 
-**Example: Validate version**
+#### Example: Validate version
 
 Set a repository variable `NEXT_RELEASE_VERSION` (e.g., `1.2.3`) in your repo settings, then:
 
@@ -222,7 +222,7 @@ Set a repository variable `NEXT_RELEASE_VERSION` (e.g., `1.2.3`) in your repo se
 
 This fails the build if the git tag doesn't match the expected version, catching accidental releases.
 
-**Example: Validate version with Cargo.toml check**
+#### Example: Validate version with Cargo.toml check
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v1
@@ -252,7 +252,7 @@ For `collect-artifacts` command. Scans a directory, computes checksums, and outp
 | `artifacts-dir` | Directory containing artifacts | `artifacts` |
 | `base-url` | Base URL for download links | — |
 
-**Example: Collect artifacts and generate Homebrew formula**
+#### Example: Collect artifacts and generate Homebrew formula
 
 ```yaml
 - uses: actions/download-artifact@v4
@@ -300,7 +300,7 @@ Shared metadata for Linux packages (deb/rpm/apk), Homebrew, AUR, and Winget.
 | `pkg-group` | RPM group | `Applications/System` |
 | `pkg-release` | Package release/revision number | — |
 
-**Example: Debian package with dependencies**
+#### Example: Debian package with dependencies
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -323,7 +323,7 @@ For `generate-sbom` command.
 | `sbom-format` | Formats: `spdx`, `cyclonedx`, or both | `spdx,cyclonedx` |
 | `sbom-dir` | Output directory | `target/sbom` |
 
-**Example: Generate SBOMs**
+#### Example: Generate SBOMs
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -349,7 +349,7 @@ For `generate-homebrew` command. SHA256 values come from build step outputs.
 | `brew-linux-x64-sha256` | Linux x64 SHA256 | — |
 | `brew-dir` | Output directory | `target/homebrew` |
 
-**Example: Generate Homebrew formula**
+#### Example: Generate Homebrew formula
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -370,7 +370,7 @@ For `sign-artifact` command.
 |-------|-------------|---------|
 | `artifact` | Path to artifact for Sigstore signing | — |
 
-**Example: Sign artifact**
+#### Example: Sign artifact
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -393,7 +393,7 @@ For `format-release` command.
 | `aur-package` | AUR package name for installation instructions | — |
 | `winget-id` | Winget package ID for installation instructions | — |
 
-**Example: Format release body with installation instructions**
+#### Example: Format release body with installation instructions
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -420,7 +420,7 @@ For `generate-aur` command.
 | `aur-optdepends` | Optional dependencies | — |
 | `aur-dir` | Output directory | `target/aur` |
 
-**Example: Generate AUR PKGBUILD**
+#### Example: Generate AUR PKGBUILD
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0
@@ -452,7 +452,7 @@ For `generate-winget` command.
 | `winget-arm64-sha256` | Windows ARM64 SHA256 | — |
 | `winget-dir` | Output directory | `target/winget` |
 
-**Example: Generate Winget manifest**
+#### Example: Generate Winget manifest
 
 ```yaml
 - uses: michaelklishin/rust-release-action@v0

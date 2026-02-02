@@ -1,8 +1,11 @@
 # Changelog
 
-## v1.11.0
+## v1.11.0 (Feb 1, 2026)
 
-(no changes yet)
+### New Features
+
+ * Support for optional Cargo project features (auto-detection via `cargo metadata`)
+ * Auto-enable `mimalloc` feature for musl builds when available (improves performance)
 
 ## v1.10.0 (Feb 1, 2026)
 
