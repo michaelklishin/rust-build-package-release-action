@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.14.0 (Feb 2, 2026)
+
+### Bug Fixes
+
+ * Use `get -o 0` instead of `first?` for Nu 0.110 compatibility
+ * Improve AUR error messages, fallback to `binary-name` input
+ * Fix empty table handling in `format-release.nu`
+ * Fix filesize to int conversion in `format-size`
+ * Add sync and retry logic for DMG creation (fixes "Resource busy" errors)
+
 ## v1.13.0 (Feb 2, 2026)
 
 ### Bug Fixes
