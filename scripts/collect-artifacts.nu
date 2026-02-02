@@ -101,7 +101,7 @@ def main [] {
 }
 
 # Detect platform from artifact filename
-def detect-platform [filename: string]: nothing -> string {
+export def detect-platform [filename: string]: nothing -> string {
     if ($filename =~ "darwin.*arm64|aarch64.*apple|apple.*aarch64|macos.*arm64") {
         "macos-arm64"
     } else if ($filename =~ "darwin.*x86_64|x86_64.*apple|apple.*x86_64|macos.*x64|macos.*x86_64") {
@@ -114,15 +114,15 @@ def detect-platform [filename: string]: nothing -> string {
         "windows-x64"
     } else if ($filename =~ "windows.*aarch64|aarch64.*windows|windows.*arm64") {
         "windows-arm64"
-    } else if ($filename =~ "\.deb$") {
+    } else if ($filename =~ '\.deb$') {
         "linux-deb"
-    } else if ($filename =~ "\.rpm$") {
+    } else if ($filename =~ '\.rpm$') {
         "linux-rpm"
-    } else if ($filename =~ "\.apk$") {
+    } else if ($filename =~ '\.apk$') {
         "linux-apk"
-    } else if ($filename =~ "\.dmg$") {
+    } else if ($filename =~ '\.dmg$') {
         "macos-dmg"
-    } else if ($filename =~ "\.msi$") {
+    } else if ($filename =~ '\.msi$') {
         "windows-msi"
     } else {
         "unknown"
