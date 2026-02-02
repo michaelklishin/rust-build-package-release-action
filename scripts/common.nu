@@ -238,9 +238,9 @@ export def build-summary [
 export def check-nfpm [] {
     if (which nfpm | is-empty) {
         print $"(ansi yellow)nfpm not found, installing...(ansi reset)"
-        let arch = if (^uname -m | str trim) == "aarch64" { "arm64" } else { "amd64" }
-        let nfpm_version = "2.41.1"
-        let url = $"https://github.com/goreleaser/nfpm/releases/download/v($nfpm_version)/nfpm_($nfpm_version)_linux_($arch).tar.gz"
+        let arch = if (^uname -m | str trim) == "aarch64" { "arm64" } else { "x86_64" }
+        let nfpm_version = "2.44.2"
+        let url = $"https://github.com/goreleaser/nfpm/releases/download/v($nfpm_version)/nfpm_($nfpm_version)_Linux_($arch).tar.gz"
         http get $url | tar xz -C /tmp nfpm
         sudo mv /tmp/nfpm /usr/local/bin/nfpm
     }

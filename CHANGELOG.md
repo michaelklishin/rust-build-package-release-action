@@ -1,8 +1,14 @@
 # Changelog
 
-## v1.6.0
+## v1.7.0
 
 (no changes yet)
+
+## v1.6.0 (Feb 1, 2026)
+
+### Bug Fixes
+
+ * Fix `nfpm` downloads on x86-64 Linux
 
 ## v1.5.0 (Feb 1, 2026)
 
