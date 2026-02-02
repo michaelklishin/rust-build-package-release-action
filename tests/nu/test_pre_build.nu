@@ -7,7 +7,10 @@ use common.nu [run-pre-build-hook]
 
 def main [] {
     test-pre-build-hook-empty
-    test-pre-build-hook-success
+    # Skip shell command test on Windows (shell syntax differs)
+    if (sys host | get name) != "Windows" {
+        test-pre-build-hook-success
+    }
 }
 
 def test-pre-build-hook-empty [] {
@@ -22,8 +25,9 @@ def test-pre-build-hook-empty [] {
 }
 
 def test-pre-build-hook-success [] {
-    # Test successful command execution
-    let temp_file = $"/tmp/test-pre-build-(random uuid)"
+    # Test successful command execution (Unix only, uses shell pipes/std stream redirection)
+    let temp_dir = $env.TMPDIR? | default "/tmp"
+    let temp_file = $"($temp_dir)/test-pre-build-(random uuid)"
     $env.PRE_BUILD = $"echo 'test content' > ($temp_file)"
 
     run-pre-build-hook
