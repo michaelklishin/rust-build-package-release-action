@@ -4,15 +4,13 @@ An opinionated, conventions-based GitHub Action that automates release workflows
 
 ## Features
 
- * Cross-platform builds for Linux, macOS, and Windows
- * Linux packages: `.deb`, `.rpm`, `.apk` via [nfpm](https://nfpm.goreleaser.com/)
- * macOS `.dmg` installers via `hdiutil`
- * Windows `.msi` installers via [cargo-wix](https://github.com/volks73/cargo-wix)
- * Homebrew formula, AUR PKGBUILD, and Winget manifest generation
- * Sigstore/cosign artifact signing
- * SBOM generation in SPDX and CycloneDX formats
- * Changelog parsing and GitHub Release body formatting
- * SHA256, SHA512, and BLAKE2 checksums
+ * Build release binaries for Linux, macOS, and Windows from a single workflow
+ * Package as `.deb`, `.rpm`, `.apk` (Linux), `.dmg` (macOS), or `.msi` (Windows)
+ * Generate Homebrew formulae, AUR PKGBUILDs, and Winget manifests
+ * Sign artifacts with Sigstore/cosign
+ * Produce SBOMs in SPDX and CycloneDX formats
+ * Extract release notes from your changelog
+ * Compute SHA256, SHA512, and BLAKE2 checksums
 
 ## Conventions
 
@@ -21,6 +19,7 @@ This action expects:
  1. **Changelog format**: versions as `## v{version} ({date})` headers
  2. **Tag format**: tags prefixed with `v` (e.g., `v1.2.3`, `v1.0.0-beta.1`)
  3. **Versioning**: `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` format
+ 4. **Version variable**: a repository variable `NEXT_RELEASE_VERSION` containing the expected next version (used by `validate-version`)
 
 ---
 
@@ -210,12 +209,16 @@ For `validate-version` command.
 
 **Example: Validate version**
 
+Set a repository variable `NEXT_RELEASE_VERSION` (e.g., `1.2.3`) in your repo settings, then:
+
 ```yaml
 - uses: michaelklishin/rust-release-action@v1
   with:
     command: validate-version
     expected-version: ${{ vars.NEXT_RELEASE_VERSION }}
 ```
+
+This fails the build if the git tag doesn't match the expected version, catching accidental releases.
 
 **Example: Validate version with Cargo.toml check**
 
