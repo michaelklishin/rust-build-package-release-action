@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.8.0
+
+(no changes yet)
+
 ## v1.7.0 (Feb 1, 2026)
 
 ### Bug Fixes
