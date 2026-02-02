@@ -89,8 +89,23 @@ def main [] {
 def create-dmg [src_dir: string, vol_name: string, output_path: string] {
     let temp_dmg = $"($output_path).temp.dmg"
 
-    # Create writable DMG from source folder
-    let result = do { hdiutil create -srcfolder $src_dir -volname $vol_name -fs HFS+ -format UDRW -ov $temp_dmg } | complete
+    # Ensure files are synced to disk before creating DMG
+    sync
+
+    # Create writable DMG from source folder (with retry for "Resource busy" errors)
+    mut attempts = 0
+    mut result = { exit_code: 1, stderr: "" }
+    while $attempts < 3 {
+        $result = (do { hdiutil create -srcfolder $src_dir -volname $vol_name -fs HFS+ -format UDRW -ov $temp_dmg } | complete)
+        if $result.exit_code == 0 {
+            break
+        }
+        $attempts = $attempts + 1
+        if $attempts < 3 {
+            print $"(ansi yellow)hdiutil create failed, retrying in 2s...(ansi reset)"
+            sleep 2sec
+        }
+    }
     if $result.exit_code != 0 {
         error $"hdiutil create failed: ($result.stderr)"
     }
