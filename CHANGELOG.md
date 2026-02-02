@@ -2,7 +2,9 @@
 
 ## v1.3.0
 
-(no changes yet)
+### Bug Fixes
+
+ * Use direct `$env.VAR` assignment instead of `load-env` to propagate variables to subprocesses
 
 ## v1.2.0 (Feb 1, 2026)
 

@@ -13,7 +13,118 @@ def main [] {
     }
 
     # Map inputs to environment variables expected by scripts
-    setup-env
+    # Using $env.VAR = value instead of load-env so vars propagate to subprocesses
+
+    # Version - auto-detect from tag if not provided
+    let version_input = $env.INPUT_VERSION? | default ""
+    $env.VERSION = if $version_input != "" {
+        $version_input
+    } else if ($env.GITHUB_REF_NAME? | default "" | str starts-with "v") {
+        $env.GITHUB_REF_NAME | str substring 1..
+    } else {
+        ""
+    }
+
+    # Core inputs
+    if ($env.INPUT_TARGET? | default "") != "" { $env.TARGET = $env.INPUT_TARGET }
+    if ($env.INPUT_BINARY_NAME? | default "") != "" { $env.BINARY_NAME = $env.INPUT_BINARY_NAME }
+    if ($env.INPUT_PACKAGE? | default "") != "" { $env.PACKAGE = $env.INPUT_PACKAGE }
+    if ($env.INPUT_MANIFEST? | default "") != "" { $env.MANIFEST_PATH = $env.INPUT_MANIFEST }
+
+    # Build options
+    if ($env.INPUT_PRE_BUILD? | default "") != "" { $env.PRE_BUILD = $env.INPUT_PRE_BUILD }
+    if ($env.INPUT_BINARY_PATH? | default "") != "" { $env.BINARY_PATH = $env.INPUT_BINARY_PATH }
+    if ($env.INPUT_FEATURES? | default "") != "" { $env.FEATURES = $env.INPUT_FEATURES }
+    if ($env.INPUT_PROFILE? | default "") != "" { $env.PROFILE = $env.INPUT_PROFILE }
+    if ($env.INPUT_RUSTFLAGS? | default "") != "" { $env.TARGET_RUSTFLAGS = $env.INPUT_RUSTFLAGS }
+    if ($env.INPUT_SKIP_BUILD? | default "") == "true" { $env.SKIP_BUILD = "true" }
+    if ($env.INPUT_LOCKED? | default "") == "true" { $env.LOCKED = "true" }
+    if ($env.INPUT_NO_DEFAULT_FEATURES? | default "") == "true" { $env.NO_DEFAULT_FEATURES = "true" }
+    if ($env.INPUT_ARCHIVE? | default "") == "true" { $env.ARCHIVE = "true" }
+
+    # Output options
+    if ($env.INPUT_CHECKSUM? | default "") != "" { $env.CHECKSUM = $env.INPUT_CHECKSUM }
+    if ($env.INPUT_INCLUDE? | default "") != "" { $env.INCLUDE = $env.INPUT_INCLUDE }
+
+    # Changelog options
+    if ($env.INPUT_CHANGELOG? | default "") != "" { $env.CHANGELOG_PATH = $env.INPUT_CHANGELOG }
+    if ($env.INPUT_NOTES_OUTPUT? | default "") != "" { $env.OUTPUT_PATH = $env.INPUT_NOTES_OUTPUT }
+
+    # Version validation
+    if ($env.INPUT_TAG? | default "") != "" { $env.TAG = $env.INPUT_TAG }
+    if ($env.INPUT_EXPECTED_VERSION? | default "") != "" { $env.EXPECTED_VERSION = $env.INPUT_EXPECTED_VERSION }
+    if ($env.INPUT_VALIDATE_CARGO_TOML? | default "") == "true" { $env.VALIDATE_CARGO_TOML = "true" }
+
+    # Package metadata
+    if ($env.INPUT_PKG_DESCRIPTION? | default "") != "" { $env.PKG_DESCRIPTION = $env.INPUT_PKG_DESCRIPTION }
+    if ($env.INPUT_PKG_MAINTAINER? | default "") != "" { $env.PKG_MAINTAINER = $env.INPUT_PKG_MAINTAINER }
+    if ($env.INPUT_PKG_HOMEPAGE? | default "") != "" { $env.PKG_HOMEPAGE = $env.INPUT_PKG_HOMEPAGE }
+    if ($env.INPUT_PKG_LICENSE? | default "") != "" { $env.PKG_LICENSE = $env.INPUT_PKG_LICENSE }
+    if ($env.INPUT_PKG_VENDOR? | default "") != "" { $env.PKG_VENDOR = $env.INPUT_PKG_VENDOR }
+    if ($env.INPUT_PKG_DEPENDS? | default "") != "" { $env.PKG_DEPENDS = $env.INPUT_PKG_DEPENDS }
+    if ($env.INPUT_PKG_RECOMMENDS? | default "") != "" { $env.PKG_RECOMMENDS = $env.INPUT_PKG_RECOMMENDS }
+    if ($env.INPUT_PKG_SUGGESTS? | default "") != "" { $env.PKG_SUGGESTS = $env.INPUT_PKG_SUGGESTS }
+    if ($env.INPUT_PKG_CONFLICTS? | default "") != "" { $env.PKG_CONFLICTS = $env.INPUT_PKG_CONFLICTS }
+    if ($env.INPUT_PKG_REPLACES? | default "") != "" { $env.PKG_REPLACES = $env.INPUT_PKG_REPLACES }
+    if ($env.INPUT_PKG_PROVIDES? | default "") != "" { $env.PKG_PROVIDES = $env.INPUT_PKG_PROVIDES }
+    if ($env.INPUT_PKG_CONTENTS? | default "") != "" { $env.PKG_CONTENTS = $env.INPUT_PKG_CONTENTS }
+    if ($env.INPUT_PKG_SECTION? | default "") != "" { $env.PKG_SECTION = $env.INPUT_PKG_SECTION }
+    if ($env.INPUT_PKG_PRIORITY? | default "") != "" { $env.PKG_PRIORITY = $env.INPUT_PKG_PRIORITY }
+    if ($env.INPUT_PKG_GROUP? | default "") != "" { $env.PKG_GROUP = $env.INPUT_PKG_GROUP }
+    if ($env.INPUT_PKG_RELEASE? | default "") != "" { $env.PKG_RELEASE = $env.INPUT_PKG_RELEASE }
+
+    # SBOM options
+    if ($env.INPUT_SBOM_FORMAT? | default "") != "" { $env.SBOM_FORMAT = $env.INPUT_SBOM_FORMAT }
+    if ($env.INPUT_SBOM_DIR? | default "") != "" { $env.SBOM_OUTPUT_DIR = $env.INPUT_SBOM_DIR }
+
+    # Homebrew options
+    if ($env.INPUT_BREW_CLASS? | default "") != "" { $env.HOMEBREW_FORMULA_CLASS = $env.INPUT_BREW_CLASS }
+    if ($env.INPUT_BREW_MACOS_ARM64_URL? | default "") != "" { $env.HOMEBREW_MACOS_ARM64_URL = $env.INPUT_BREW_MACOS_ARM64_URL }
+    if ($env.INPUT_BREW_MACOS_ARM64_SHA256? | default "") != "" { $env.HOMEBREW_MACOS_ARM64_SHA256 = $env.INPUT_BREW_MACOS_ARM64_SHA256 }
+    if ($env.INPUT_BREW_MACOS_X64_URL? | default "") != "" { $env.HOMEBREW_MACOS_X64_URL = $env.INPUT_BREW_MACOS_X64_URL }
+    if ($env.INPUT_BREW_MACOS_X64_SHA256? | default "") != "" { $env.HOMEBREW_MACOS_X64_SHA256 = $env.INPUT_BREW_MACOS_X64_SHA256 }
+    if ($env.INPUT_BREW_LINUX_ARM64_URL? | default "") != "" { $env.HOMEBREW_LINUX_ARM64_URL = $env.INPUT_BREW_LINUX_ARM64_URL }
+    if ($env.INPUT_BREW_LINUX_ARM64_SHA256? | default "") != "" { $env.HOMEBREW_LINUX_ARM64_SHA256 = $env.INPUT_BREW_LINUX_ARM64_SHA256 }
+    if ($env.INPUT_BREW_LINUX_X64_URL? | default "") != "" { $env.HOMEBREW_LINUX_X64_URL = $env.INPUT_BREW_LINUX_X64_URL }
+    if ($env.INPUT_BREW_LINUX_X64_SHA256? | default "") != "" { $env.HOMEBREW_LINUX_X64_SHA256 = $env.INPUT_BREW_LINUX_X64_SHA256 }
+    if ($env.INPUT_BREW_DIR? | default "") != "" { $env.HOMEBREW_OUTPUT_DIR = $env.INPUT_BREW_DIR }
+
+    # Signing options
+    if ($env.INPUT_ARTIFACT? | default "") != "" { $env.ARTIFACT_PATH = $env.INPUT_ARTIFACT }
+
+    # Artifact collection
+    if ($env.INPUT_ARTIFACTS_DIR? | default "") != "" { $env.ARTIFACTS_DIR = $env.INPUT_ARTIFACTS_DIR }
+    if ($env.INPUT_BASE_URL? | default "") != "" { $env.BASE_URL = $env.INPUT_BASE_URL }
+
+    # Release body options
+    if ($env.INPUT_NOTES_FILE? | default "") != "" { $env.RELEASE_NOTES_FILE = $env.INPUT_NOTES_FILE }
+    if ($env.INPUT_INCLUDE_CHECKSUMS? | default "") != "" { $env.INCLUDE_CHECKSUMS = $env.INPUT_INCLUDE_CHECKSUMS }
+    if ($env.INPUT_INCLUDE_SIGNATURES? | default "") != "" { $env.INCLUDE_SIGNATURES = $env.INPUT_INCLUDE_SIGNATURES }
+    if ($env.INPUT_HOMEBREW_TAP? | default "") != "" { $env.HOMEBREW_TAP = $env.INPUT_HOMEBREW_TAP }
+    if ($env.INPUT_AUR_PACKAGE? | default "") != "" { $env.AUR_PACKAGE = $env.INPUT_AUR_PACKAGE }
+    if ($env.INPUT_WINGET_ID? | default "") != "" { $env.WINGET_ID = $env.INPUT_WINGET_ID }
+
+    # AUR options
+    if ($env.INPUT_AUR_NAME? | default "") != "" { $env.AUR_PACKAGE_NAME = $env.INPUT_AUR_NAME }
+    if ($env.INPUT_AUR_MAINTAINER? | default "") != "" { $env.AUR_MAINTAINER = $env.INPUT_AUR_MAINTAINER }
+    if ($env.INPUT_AUR_SOURCE_URL? | default "") != "" { $env.AUR_SOURCE_URL = $env.INPUT_AUR_SOURCE_URL }
+    if ($env.INPUT_AUR_SOURCE_SHA256? | default "") != "" { $env.AUR_SOURCE_SHA256 = $env.INPUT_AUR_SOURCE_SHA256 }
+    if ($env.INPUT_AUR_MAKEDEPENDS? | default "") != "" { $env.AUR_MAKEDEPENDS = $env.INPUT_AUR_MAKEDEPENDS }
+    if ($env.INPUT_AUR_OPTDEPENDS? | default "") != "" { $env.AUR_OPTDEPENDS = $env.INPUT_AUR_OPTDEPENDS }
+    if ($env.INPUT_AUR_DIR? | default "") != "" { $env.AUR_OUTPUT_DIR = $env.INPUT_AUR_DIR }
+
+    # Winget options
+    if ($env.INPUT_WINGET_PUBLISHER? | default "") != "" { $env.WINGET_PUBLISHER = $env.INPUT_WINGET_PUBLISHER }
+    if ($env.INPUT_WINGET_PUBLISHER_ID? | default "") != "" { $env.WINGET_PUBLISHER_ID = $env.INPUT_WINGET_PUBLISHER_ID }
+    if ($env.INPUT_WINGET_PACKAGE_ID? | default "") != "" { $env.WINGET_PACKAGE_ID = $env.INPUT_WINGET_PACKAGE_ID }
+    if ($env.INPUT_WINGET_LICENSE_URL? | default "") != "" { $env.WINGET_LICENSE_URL = $env.INPUT_WINGET_LICENSE_URL }
+    if ($env.INPUT_WINGET_COPYRIGHT? | default "") != "" { $env.WINGET_COPYRIGHT = $env.INPUT_WINGET_COPYRIGHT }
+    if ($env.INPUT_WINGET_TAGS? | default "") != "" { $env.WINGET_TAGS = $env.INPUT_WINGET_TAGS }
+    if ($env.INPUT_WINGET_X64_URL? | default "") != "" { $env.WINGET_X64_URL = $env.INPUT_WINGET_X64_URL }
+    if ($env.INPUT_WINGET_X64_SHA256? | default "") != "" { $env.WINGET_X64_SHA256 = $env.INPUT_WINGET_X64_SHA256 }
+    if ($env.INPUT_WINGET_ARM64_URL? | default "") != "" { $env.WINGET_ARM64_URL = $env.INPUT_WINGET_ARM64_URL }
+    if ($env.INPUT_WINGET_ARM64_SHA256? | default "") != "" { $env.WINGET_ARM64_SHA256 = $env.INPUT_WINGET_ARM64_SHA256 }
+    if ($env.INPUT_WINGET_DIR? | default "") != "" { $env.WINGET_OUTPUT_DIR = $env.INPUT_WINGET_DIR }
 
     let script = match $command {
         "extract-changelog" => "extract-changelog.nu"
@@ -42,134 +153,4 @@ def main [] {
     }
 
     nu ($scripts | path join $script)
-}
-
-# Maps INPUT_* environment variables to the names expected by scripts
-def setup-env [] {
-    # Version - auto-detect from tag if not provided
-    let version_input = $env.INPUT_VERSION? | default ""
-    $env.VERSION = if $version_input != "" {
-        $version_input
-    } else if ($env.GITHUB_REF_NAME? | default "" | str starts-with "v") {
-        $env.GITHUB_REF_NAME | str substring 1..
-    } else {
-        ""
-    }
-
-    # Core inputs
-    map-env "INPUT_TARGET" "TARGET"
-    map-env "INPUT_BINARY_NAME" "BINARY_NAME"
-    map-env "INPUT_PACKAGE" "PACKAGE"
-    map-env "INPUT_MANIFEST" "MANIFEST_PATH"
-
-    # Build options
-    map-env "INPUT_PRE_BUILD" "PRE_BUILD"
-    map-env "INPUT_BINARY_PATH" "BINARY_PATH"
-    map-env "INPUT_FEATURES" "FEATURES"
-    map-env "INPUT_PROFILE" "PROFILE"
-    map-env "INPUT_RUSTFLAGS" "TARGET_RUSTFLAGS"
-    map-bool "INPUT_SKIP_BUILD" "SKIP_BUILD"
-    map-bool "INPUT_LOCKED" "LOCKED"
-    map-bool "INPUT_NO_DEFAULT_FEATURES" "NO_DEFAULT_FEATURES"
-    map-bool "INPUT_ARCHIVE" "ARCHIVE"
-
-    # Output options
-    map-env "INPUT_CHECKSUM" "CHECKSUM"
-    map-env "INPUT_INCLUDE" "INCLUDE"
-
-    # Changelog options
-    map-env "INPUT_CHANGELOG" "CHANGELOG_PATH"
-    map-env "INPUT_NOTES_OUTPUT" "OUTPUT_PATH"
-
-    # Version validation
-    map-env "INPUT_TAG" "TAG"
-    map-env "INPUT_EXPECTED_VERSION" "EXPECTED_VERSION"
-    map-bool "INPUT_VALIDATE_CARGO_TOML" "VALIDATE_CARGO_TOML"
-
-    # Package metadata
-    map-env "INPUT_PKG_DESCRIPTION" "PKG_DESCRIPTION"
-    map-env "INPUT_PKG_MAINTAINER" "PKG_MAINTAINER"
-    map-env "INPUT_PKG_HOMEPAGE" "PKG_HOMEPAGE"
-    map-env "INPUT_PKG_LICENSE" "PKG_LICENSE"
-    map-env "INPUT_PKG_VENDOR" "PKG_VENDOR"
-    map-env "INPUT_PKG_DEPENDS" "PKG_DEPENDS"
-    map-env "INPUT_PKG_RECOMMENDS" "PKG_RECOMMENDS"
-    map-env "INPUT_PKG_SUGGESTS" "PKG_SUGGESTS"
-    map-env "INPUT_PKG_CONFLICTS" "PKG_CONFLICTS"
-    map-env "INPUT_PKG_REPLACES" "PKG_REPLACES"
-    map-env "INPUT_PKG_PROVIDES" "PKG_PROVIDES"
-    map-env "INPUT_PKG_CONTENTS" "PKG_CONTENTS"
-    map-env "INPUT_PKG_SECTION" "PKG_SECTION"
-    map-env "INPUT_PKG_PRIORITY" "PKG_PRIORITY"
-    map-env "INPUT_PKG_GROUP" "PKG_GROUP"
-    map-env "INPUT_PKG_RELEASE" "PKG_RELEASE"
-
-    # SBOM options
-    map-env "INPUT_SBOM_FORMAT" "SBOM_FORMAT"
-    map-env "INPUT_SBOM_DIR" "SBOM_OUTPUT_DIR"
-
-    # Homebrew options
-    map-env "INPUT_BREW_CLASS" "HOMEBREW_FORMULA_CLASS"
-    map-env "INPUT_BREW_MACOS_ARM64_URL" "HOMEBREW_MACOS_ARM64_URL"
-    map-env "INPUT_BREW_MACOS_ARM64_SHA256" "HOMEBREW_MACOS_ARM64_SHA256"
-    map-env "INPUT_BREW_MACOS_X64_URL" "HOMEBREW_MACOS_X64_URL"
-    map-env "INPUT_BREW_MACOS_X64_SHA256" "HOMEBREW_MACOS_X64_SHA256"
-    map-env "INPUT_BREW_LINUX_ARM64_URL" "HOMEBREW_LINUX_ARM64_URL"
-    map-env "INPUT_BREW_LINUX_ARM64_SHA256" "HOMEBREW_LINUX_ARM64_SHA256"
-    map-env "INPUT_BREW_LINUX_X64_URL" "HOMEBREW_LINUX_X64_URL"
-    map-env "INPUT_BREW_LINUX_X64_SHA256" "HOMEBREW_LINUX_X64_SHA256"
-    map-env "INPUT_BREW_DIR" "HOMEBREW_OUTPUT_DIR"
-
-    # Signing options
-    map-env "INPUT_ARTIFACT" "ARTIFACT_PATH"
-
-    # Artifact collection
-    map-env "INPUT_ARTIFACTS_DIR" "ARTIFACTS_DIR"
-    map-env "INPUT_BASE_URL" "BASE_URL"
-
-    # Release body options
-    map-env "INPUT_NOTES_FILE" "RELEASE_NOTES_FILE"
-    map-env "INPUT_INCLUDE_CHECKSUMS" "INCLUDE_CHECKSUMS"
-    map-env "INPUT_INCLUDE_SIGNATURES" "INCLUDE_SIGNATURES"
-    map-env "INPUT_HOMEBREW_TAP" "HOMEBREW_TAP"
-    map-env "INPUT_AUR_PACKAGE" "AUR_PACKAGE"
-    map-env "INPUT_WINGET_ID" "WINGET_ID"
-
-    # AUR options
-    map-env "INPUT_AUR_NAME" "AUR_PACKAGE_NAME"
-    map-env "INPUT_AUR_MAINTAINER" "AUR_MAINTAINER"
-    map-env "INPUT_AUR_SOURCE_URL" "AUR_SOURCE_URL"
-    map-env "INPUT_AUR_SOURCE_SHA256" "AUR_SOURCE_SHA256"
-    map-env "INPUT_AUR_MAKEDEPENDS" "AUR_MAKEDEPENDS"
-    map-env "INPUT_AUR_OPTDEPENDS" "AUR_OPTDEPENDS"
-    map-env "INPUT_AUR_DIR" "AUR_OUTPUT_DIR"
-
-    # Winget options
-    map-env "INPUT_WINGET_PUBLISHER" "WINGET_PUBLISHER"
-    map-env "INPUT_WINGET_PUBLISHER_ID" "WINGET_PUBLISHER_ID"
-    map-env "INPUT_WINGET_PACKAGE_ID" "WINGET_PACKAGE_ID"
-    map-env "INPUT_WINGET_LICENSE_URL" "WINGET_LICENSE_URL"
-    map-env "INPUT_WINGET_COPYRIGHT" "WINGET_COPYRIGHT"
-    map-env "INPUT_WINGET_TAGS" "WINGET_TAGS"
-    map-env "INPUT_WINGET_X64_URL" "WINGET_X64_URL"
-    map-env "INPUT_WINGET_X64_SHA256" "WINGET_X64_SHA256"
-    map-env "INPUT_WINGET_ARM64_URL" "WINGET_ARM64_URL"
-    map-env "INPUT_WINGET_ARM64_SHA256" "WINGET_ARM64_SHA256"
-    map-env "INPUT_WINGET_DIR" "WINGET_OUTPUT_DIR"
-}
-
-# Maps an INPUT_* env var to script env var if non-empty
-def map-env [from: string, to: string] {
-    let value = $env | get -o $from | default ""
-    if $value != "" {
-        load-env { $to: $value }
-    }
-}
-
-# Maps a boolean INPUT_* env var to script env var
-def map-bool [from: string, to: string] {
-    let value = $env | get -o $from | default ""
-    if $value == "true" {
-        load-env { $to: "true" }
-    }
 }
