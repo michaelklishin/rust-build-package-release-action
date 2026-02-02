@@ -73,22 +73,35 @@ def main [] {
 def check-cosign [] {
     if (which cosign | is-empty) {
         print $"(ansi yellow)cosign not found, installing...(ansi reset)"
-        let arch = match (^uname -m | str trim) {
-            "arm64" | "aarch64" => "arm64"
-            _ => "amd64"
-        }
-        let os = match (^uname -s | str trim | str downcase) {
-            "darwin" => "darwin"
-            _ => "linux"
-        }
-        let cosign_version = "2.4.1"
-        let url = $"https://github.com/sigstore/cosign/releases/download/v($cosign_version)/cosign-($os)-($arch)"
-        http get $url | save -f /tmp/cosign
-        chmod +x /tmp/cosign
-        if (which sudo | is-not-empty) {
-            sudo mv /tmp/cosign /usr/local/bin/cosign
+        let cosign_version = "3.0.4"
+        let is_windows = (sys host | get name) == "Windows"
+
+        if $is_windows {
+            let url = $"https://github.com/sigstore/cosign/releases/download/v($cosign_version)/cosign-windows-amd64.exe"
+            let temp_path = ($env.TEMP | path join "cosign.exe")
+            let dest_path = ($env.USERPROFILE | path join ".local" "bin" "cosign.exe")
+            mkdir ($dest_path | path dirname)
+            http get $url | save -f $temp_path
+            mv $temp_path $dest_path
+            # Add to PATH for this session
+            $env.PATH = ($env.PATH | prepend ($dest_path | path dirname))
         } else {
-            mv /tmp/cosign /usr/local/bin/cosign
+            let arch = match (^uname -m | str trim) {
+                "arm64" | "aarch64" => "arm64"
+                _ => "amd64"
+            }
+            let os = match (^uname -s | str trim | str downcase) {
+                "darwin" => "darwin"
+                _ => "linux"
+            }
+            let url = $"https://github.com/sigstore/cosign/releases/download/v($cosign_version)/cosign-($os)-($arch)"
+            http get $url | save -f /tmp/cosign
+            chmod +x /tmp/cosign
+            if (which sudo | is-not-empty) {
+                sudo mv /tmp/cosign /usr/local/bin/cosign
+            } else {
+                mv /tmp/cosign /usr/local/bin/cosign
+            }
         }
     }
 }

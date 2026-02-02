@@ -1,8 +1,10 @@
 # Changelog
 
-## v1.7.0
+## v1.7.0 (Feb 1, 2026)
 
-(no changes yet)
+### Bug Fixes
+
+ * Fix `cosign` installation on Windows
 
 ## v1.6.0 (Feb 1, 2026)
 
