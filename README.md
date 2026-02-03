@@ -28,7 +28,7 @@ This action expects:
 
 ```yaml
 # Build a release binary (auto-selects platform from target)
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: release
     target: x86_64-unknown-linux-gnu
@@ -38,7 +38,7 @@ This action expects:
 Or use platform-specific commands:
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
@@ -64,7 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install stable --profile minimal
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         id: build
         with:
           command: release
@@ -114,7 +114,7 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 #### Example: Cross-compile aarch64-linux-musl with zigbuild
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: release-linux
     target: aarch64-unknown-linux-musl
@@ -125,7 +125,7 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 #### Example: Static musl build with specific features
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: release-linux
     target: x86_64-unknown-linux-musl
@@ -141,7 +141,7 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 For projects that require a frontend build (WASM, npm, etc.) before `cargo build`:
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
@@ -160,7 +160,7 @@ For Alpine/container workflows where the build happens in a separate step:
     cargo build --release --target x86_64-unknown-linux-musl
 
 # Package the pre-built binary
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: release-linux
     target: x86_64-unknown-linux-musl
@@ -182,7 +182,7 @@ Control artifact generation and checksums.
 #### Example: Archive with multiple checksums
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
@@ -206,7 +206,7 @@ For `extract-changelog` and `validate-changelog` commands.
 #### Example: Extract changelog
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: extract-changelog
     # version auto-detected from git tag (e.g., v1.2.3 -> 1.2.3)
@@ -250,7 +250,7 @@ This fails the build if the git tag doesn't match the expected version, catching
 For `validate-changelog` command. Fails fast if no changelog entry exists for the release version.
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: validate-changelog
     version: '1.2.3'  # Or omit to auto-detect from git tag
@@ -272,14 +272,14 @@ For `collect-artifacts` command. Scans a directory, computes checksums, and outp
   with:
     path: artifacts
 
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   id: collect
   with:
     command: collect-artifacts
     artifacts-dir: artifacts
     base-url: 'https://github.com/${{ github.repository }}/releases/download/v${{ needs.validate.outputs.version }}'
 
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: generate-homebrew
     version: ${{ needs.validate.outputs.version }}
@@ -316,7 +316,7 @@ Shared metadata for Linux packages (deb/rpm/apk), Homebrew, AUR, and Winget.
 #### Example: Debian package with dependencies
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: release-linux-deb
     target: x86_64-unknown-linux-gnu
@@ -339,7 +339,7 @@ For `generate-sbom` command.
 #### Example: Generate SBOMs
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: generate-sbom
     sbom-format: 'spdx,cyclonedx'
@@ -365,7 +365,7 @@ For `generate-homebrew` command. SHA256 values come from build step outputs.
 #### Example: Generate Homebrew formula
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: generate-homebrew
     version: ${{ needs.build.outputs.version }}
@@ -386,7 +386,7 @@ For `sign-artifact` command.
 #### Example: Sign artifact
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: sign-artifact
     artifact: 'target/release/myapp-1.0.0.tar.gz'
@@ -409,7 +409,7 @@ For `format-release` command.
 #### Example: Format release body with installation instructions
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: format-release
     version: '1.0.0'
@@ -436,7 +436,7 @@ For `generate-aur` command.
 #### Example: Generate AUR PKGBUILD
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: generate-aur
     version: '1.0.0'
@@ -468,7 +468,7 @@ For `generate-winget` command.
 #### Example: Generate Winget manifest
 
 ```yaml
-- uses: michaelklishin/rust-release-action@v0
+- uses: michaelklishin/rust-release-action@v1
   with:
     command: generate-winget
     version: '1.0.0'
@@ -570,7 +570,7 @@ jobs:
       version: ${{ steps.validate.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         id: validate
         with:
           command: validate-version
@@ -593,7 +593,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install stable --profile minimal
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         id: build
         with:
           command: ${{ matrix.command }}
@@ -610,7 +610,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         with:
           command: extract-changelog
           version: ${{ needs.validate.outputs.version }}

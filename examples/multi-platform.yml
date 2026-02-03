@@ -18,12 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         id: validate
         with:
           command: validate-version
 
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         with:
           command: extract-changelog
           version: ${{ steps.validate.outputs.version }}
@@ -56,7 +56,7 @@ jobs:
       - run: rustup toolchain install stable --profile minimal
 
       # The unified `release` command auto-selects the platform script from target
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         id: build
         with:
           command: release

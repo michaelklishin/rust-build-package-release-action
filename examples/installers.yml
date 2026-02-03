@@ -17,7 +17,7 @@ jobs:
       version: ${{ steps.validate.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         id: validate
         with:
           command: validate-version
@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: rustup toolchain install stable --profile minimal
 
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         id: build
         with:
           command: release-macos-dmg
@@ -54,7 +54,7 @@ jobs:
       - run: rustup toolchain install stable --profile minimal
 
       # Requires wix/main.wxs, use `cargo wix init` to generate
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         id: build
         with:
           command: release-windows-msi
@@ -73,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: michaelklishin/rust-release-action@v0
+      - uses: michaelklishin/rust-release-action@v1
         with:
           command: extract-changelog
           version: ${{ needs.validate.outputs.version }}
