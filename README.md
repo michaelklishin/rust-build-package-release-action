@@ -5,6 +5,7 @@ An opinionated, conventions-based GitHub Action that automates release workflows
 ## Features
 
  * Build release binaries for Linux, macOS, and Windows from a single workflow
+ * Auto-enable `mimalloc` for musl builds for projects that support it. This significantly [improves allocator performance of the MUSL builds](https://nickb.dev/blog/default-musl-allocator-considered-harmful-to-performance/)
  * Cross-compile with `cargo-zigbuild` for targets like `aarch64-unknown-linux-musl`
  * Package as `.deb`, `.rpm`, `.apk` (Linux), `.dmg` (macOS), or `.msi` (Windows)
  * Generate Homebrew formulae, AUR PKGBUILDs, and Winget manifests
