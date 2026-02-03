@@ -1,8 +1,11 @@
 # Changelog
 
-## v1.17.0 (unreleased)
+## v1.17.0 (Feb 2, 2026)
 
-(no changes yet)
+### Bug Fixes
+
+ * Fix Nushell syntax error where `(skip-build)` was interpreted as a command in print statements
+ * Add early prerequisite check for WiX source files in MSI builds
 
 ## v1.16.0 (Feb 2, 2026)
 

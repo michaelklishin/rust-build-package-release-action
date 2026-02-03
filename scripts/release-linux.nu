@@ -32,7 +32,7 @@ def main [] {
         if not ($custom_binary_path | path exists) {
             error $"binary not found: ($custom_binary_path)"
         }
-        print $"(ansi green)Packaging(ansi reset) ($binary_name) v($version) for ($target) (skip-build)"
+        print $"(ansi green)Packaging(ansi reset) ($binary_name) v($version) for ($target) \(skip-build\)"
         mkdir $release_dir
         cp $custom_binary_path $"($release_dir)/($binary_name)"
         chmod +x $"($release_dir)/($binary_name)"

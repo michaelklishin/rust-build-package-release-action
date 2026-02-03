@@ -64,6 +64,13 @@ def main [] {
         error "could not determine version"
     }
 
+    # Check for WiX source files early, before expensive operations
+    let wxs_pattern = "wix/*.wxs"
+    let wxs_files = glob $wxs_pattern
+    if ($wxs_files | is-empty) {
+        error "No WiX source files found. Run 'cargo wix init' to generate them, or create wix/*.wxs files manually."
+    }
+
     print $"(ansi green)Building(ansi reset) ($binary_name) v($version) MSI for ($target)"
 
     let release_dir = $"target/($target)/release"
