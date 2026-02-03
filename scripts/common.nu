@@ -240,6 +240,10 @@ export def output-build-results [
     output "sha512" $checksums.sha512
     output "b2" $checksums.b2
 
+    if $checksums.sha256 != "" {
+        output "checksum_file" $"($artifact_path).sha256"
+    }
+
     let summary = build-summary $binary_name $version $target $artifact $artifact_path $checksums
     output-multiline "summary" $summary
 }

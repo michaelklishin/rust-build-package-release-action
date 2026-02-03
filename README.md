@@ -479,6 +479,56 @@ For `generate-winget` command.
     pkg-license: 'MIT'
 ```
 
+### Artifact Testing Options
+
+The `test-deb`, `test-rpm`, and `test-windows` commands install packages, verify the binary runs and reports the expected version, then uninstall. Useful for smoke-testing releases across distributions.
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `download-from-release` | Fetch artifacts from GitHub release automatically | `false` |
+| `arch` | Architecture (amd64, arm64, x86_64, aarch64) | — |
+| `artifact` | Path to local artifact (when not downloading) | — |
+| `checksum-file` | Path to checksum file for verification | — |
+| `msi-path` | Path to MSI installer (test-windows only) | — |
+| `msi-checksum-file` | Path to checksum file for MSI (test-windows only) | — |
+
+With `download-from-release: true`, the action fetches artifacts from the current repository's releases using standard naming conventions and verifies checksums automatically (supports `.sha256`, `.sha512`, and `.b2` files). For private repos, set `GITHUB_TOKEN` or `GH_TOKEN` in the environment.
+
+#### Example: Get latest release version
+
+```yaml
+- uses: michaelklishin/rust-release-action@v1
+  id: version
+  with:
+    command: get-release-version
+    version: ${{ inputs.version }}
+```
+
+If `version` is provided, it's used directly. Otherwise, the latest release tag is fetched from the GitHub API and the `v` prefix stripped. No authentication is required for public repos. For private repos, set `GITHUB_TOKEN` or `GH_TOKEN` in the environment:
+
+```yaml
+- uses: michaelklishin/rust-release-action@v1
+  id: version
+  with:
+    command: get-release-version
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+#### Example: Verify packages from release
+
+```yaml
+- uses: michaelklishin/rust-release-action@v1
+  with:
+    command: test-deb
+    download-from-release: true
+    binary-name: myapp
+    version: ${{ steps.version.outputs.version }}
+    arch: ${{ matrix.arch }}
+```
+
+See `examples/verify-artifacts.yml` for a complete multi-distribution testing workflow.
+
 ---
 
 ## Commands
@@ -505,6 +555,10 @@ For `generate-winget` command.
 | `release-macos-dmg` | Build macOS DMG installer |
 | `release-windows` | Build Windows binary or zip |
 | `release-windows-msi` | Build Windows MSI installer |
+| `test-deb` | Test Debian package (install, verify version, uninstall) |
+| `test-rpm` | Test RPM package (install, verify version, uninstall) |
+| `test-windows` | Test Windows binary and MSI installer |
+| `get-release-version` | Get latest release version from GitHub (strips `v` prefix) |
 
 **Note:** The unified `release` command auto-detects the platform from the `target` input:
 - Targets containing `linux` use `release-linux`
@@ -547,6 +601,8 @@ This simplifies matrix builds by eliminating the need for per-platform command m
 | `pkgbuild` | PKGBUILD content |
 | `manifest_dir` | Winget manifest directory |
 | `manifest_id` | Winget manifest ID |
+| `checksum_file` | Path to checksum file (.sha256) |
+| `result` | Test result (success/failure) for test-* commands |
 
 ---
 

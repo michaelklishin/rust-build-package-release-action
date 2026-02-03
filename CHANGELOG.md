@@ -1,8 +1,19 @@
 # Changelog
 
-## v1.20.0 (unreleased)
+## v1.20.0 (Feb 3, 2026)
 
-(no changes yet)
+### New Features
+
+ * `get-release-version` fetches the latest release from GitHub and (if available)
+   verifies their SHA-256 checksums
+ * `test-deb`, `test-rpm`, `test-windows` commands for smoke-testing artifacts
+ * `download-from-release` mode for automatic artifact fetching
+ * New example workflows: `verify-artifacts.yml`, `build-with-verification.yml`
+
+### Enhancements
+
+ * All commands now support the `GITHUB_TOKEN` env variable (where applicable)
+   with automatic fallback to token-unaware (anonymous) operations for public repos
 
 ## v1.19.0 (Feb 3, 2026)
 

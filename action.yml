@@ -217,7 +217,7 @@ inputs:
   # Signing options - for sign-artifact command
   # ─────────────────────────────────────────────────────────────────────────────
   artifact:
-    description: 'Path to artifact for Sigstore signing'
+    description: 'Path to artifact (for signing or testing)'
     required: false
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -321,6 +321,26 @@ inputs:
     required: false
     default: 'target/winget'
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Artifact testing options - for test-deb, test-rpm, test-windows commands
+  # ─────────────────────────────────────────────────────────────────────────────
+  checksum-file:
+    description: 'Path to checksum file (.sha256, .sha512, or .b2) for verification'
+    required: false
+  msi-path:
+    description: 'Path to MSI installer (for test-windows)'
+    required: false
+  msi-checksum-file:
+    description: 'Path to checksum file for MSI installer (for test-windows)'
+    required: false
+  download-from-release:
+    description: 'Download artifacts from GitHub release instead of using local files'
+    required: false
+    default: 'false'
+  arch:
+    description: 'Architecture for artifact download (amd64, arm64, x86_64, aarch64)'
+    required: false
+
 outputs:
   version:
     description: 'Version from get-version, validate-version, or release commands'
@@ -373,6 +393,10 @@ outputs:
   b2:
     description: 'BLAKE2 checksum of the artifact'
     value: ${{ steps.run.outputs.b2 }}
+
+  checksum_file:
+    description: 'Path to checksum file (.sha256)'
+    value: ${{ steps.run.outputs.checksum_file }}
 
   summary:
     description: 'JSON summary of the build'
@@ -466,6 +490,10 @@ outputs:
   windows_arm64_sha256:
     description: 'SHA256 of Windows ARM64 artifact'
     value: ${{ steps.run.outputs.windows_arm64_sha256 }}
+
+  result:
+    description: 'Test result (success/failure) for test-* commands'
+    value: ${{ steps.run.outputs.result }}
 
 runs:
   using: 'composite'
@@ -564,3 +592,8 @@ runs:
         INPUT_WINGET_ARM64_URL: ${{ inputs.winget-arm64-url }}
         INPUT_WINGET_ARM64_SHA256: ${{ inputs.winget-arm64-sha256 }}
         INPUT_WINGET_DIR: ${{ inputs.winget-dir }}
+        INPUT_CHECKSUM_FILE: ${{ inputs.checksum-file }}
+        INPUT_MSI_PATH: ${{ inputs.msi-path }}
+        INPUT_MSI_CHECKSUM_FILE: ${{ inputs.msi-checksum-file }}
+        INPUT_DOWNLOAD_FROM_RELEASE: ${{ inputs.download-from-release }}
+        INPUT_ARCH: ${{ inputs.arch }}

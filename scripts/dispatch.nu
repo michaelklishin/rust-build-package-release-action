@@ -127,6 +127,13 @@ def main [] {
     if ($env.INPUT_WINGET_ARM64_SHA256? | default "") != "" { $env.WINGET_ARM64_SHA256 = $env.INPUT_WINGET_ARM64_SHA256 }
     if ($env.INPUT_WINGET_DIR? | default "") != "" { $env.WINGET_OUTPUT_DIR = $env.INPUT_WINGET_DIR }
 
+    # Test artifact options
+    if ($env.INPUT_CHECKSUM_FILE? | default "") != "" { $env.CHECKSUM_FILE = $env.INPUT_CHECKSUM_FILE }
+    if ($env.INPUT_MSI_PATH? | default "") != "" { $env.MSI_PATH = $env.INPUT_MSI_PATH }
+    if ($env.INPUT_MSI_CHECKSUM_FILE? | default "") != "" { $env.MSI_CHECKSUM_FILE = $env.INPUT_MSI_CHECKSUM_FILE }
+    if ($env.INPUT_DOWNLOAD_FROM_RELEASE? | default "") == "true" { $env.DOWNLOAD_FROM_RELEASE = "true" }
+    if ($env.INPUT_ARCH? | default "") != "" { $env.ARCH = $env.INPUT_ARCH }
+
     let script = match $command {
         "extract-changelog" => "extract-changelog.nu"
         "validate-changelog" => "validate-changelog.nu"
@@ -148,6 +155,10 @@ def main [] {
         "release-macos-dmg" => "release-macos-dmg.nu"
         "release-windows" => "release-windows.nu"
         "release-windows-msi" => "release-windows-msi.nu"
+        "test-deb" => "test-deb.nu"
+        "test-rpm" => "test-rpm.nu"
+        "test-windows" => "test-windows.nu"
+        "get-release-version" => "get-release-version.nu"
         _ => {
             error $"unknown command '($command)'"
         }

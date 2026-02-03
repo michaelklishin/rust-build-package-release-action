@@ -58,6 +58,12 @@ For verifying YAML file syntax, use `yq`, Ruby or Python YAML modules (whichever
  * `scripts/generate-winget.nu`: Winget manifest generator
  * `scripts/sign-artifact.nu`: Sigstore/cosign signing
  * `scripts/format-release.nu`: GitHub Release body formatter
+ * `scripts/test-common.nu`: shared functions for artifact testing
+ * `scripts/test-deb.nu`: tests Debian packages (install, verify version, uninstall)
+ * `scripts/test-rpm.nu`: tests RPM packages (install, verify version, uninstall)
+ * `scripts/test-windows.nu`: tests Windows binaries and MSI installers
+ * `scripts/download-release.nu`: downloads artifacts from GitHub releases
+ * `scripts/get-release-version.nu`: fetches latest release version from GitHub
  * `tests/run.nu`: Nu shell test runner
  * `tests/nu/*.nu`: unit tests for pure functions
 

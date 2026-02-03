@@ -1,0 +1,146 @@
+# Build and verify packages: demonstrates wiring build outputs to test inputs
+name: Build with Verification
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-test-deb:
+    name: Debian (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+          - arch: arm64
+            target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build Debian package
+        uses: michaelklishin/rust-release-action@v1
+        id: build
+        with:
+          command: release-linux-deb
+          target: ${{ matrix.target }}
+          binary-name: myapp
+          pkg-maintainer: 'Team <team@example.com>'
+          pkg-description: 'My application'
+
+      - name: Test Debian package
+        uses: michaelklishin/rust-release-action@v1
+        with:
+          command: test-deb
+          artifact: ${{ steps.build.outputs.artifact_path }}
+          checksum-file: ${{ steps.build.outputs.checksum_file }}
+          binary-name: myapp
+          version: ${{ steps.build.outputs.version }}
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.arch }}
+          path: |
+            ${{ steps.build.outputs.artifact_path }}
+            ${{ steps.build.outputs.checksum_file }}
+
+  build-and-test-rpm:
+    name: RPM (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+          - arch: aarch64
+            target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build RPM
+        uses: michaelklishin/rust-release-action@v1
+        id: build
+        with:
+          command: release-linux-rpm
+          target: ${{ matrix.target }}
+          binary-name: myapp
+          pkg-maintainer: 'Team <team@example.com>'
+          pkg-description: 'My application'
+
+      - name: Test RPM
+        uses: michaelklishin/rust-release-action@v1
+        with:
+          command: test-rpm
+          artifact: ${{ steps.build.outputs.artifact_path }}
+          checksum-file: ${{ steps.build.outputs.checksum_file }}
+          binary-name: myapp
+          version: ${{ steps.build.outputs.version }}
+
+      - name: Upload RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-${{ matrix.arch }}
+          path: |
+            ${{ steps.build.outputs.artifact_path }}
+            ${{ steps.build.outputs.checksum_file }}
+
+  build-and-test-windows:
+    name: Windows MSI
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build archive
+        uses: michaelklishin/rust-release-action@v1
+        id: archive
+        with:
+          command: release-windows
+          target: x86_64-pc-windows-msvc
+          binary-name: myapp
+          archive: 'true'
+
+      - name: Build MSI
+        uses: michaelklishin/rust-release-action@v1
+        id: msi
+        with:
+          command: release-windows-msi
+          target: x86_64-pc-windows-msvc
+          binary-name: myapp
+
+      - name: Test Windows artifacts
+        uses: michaelklishin/rust-release-action@v1
+        with:
+          command: test-windows
+          binary-path: ${{ steps.archive.outputs.binary_path }}
+          msi-path: ${{ steps.msi.outputs.artifact_path }}
+          binary-name: myapp
+          version: ${{ steps.archive.outputs.version }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: |
+            ${{ steps.archive.outputs.artifact_path }}
+            ${{ steps.archive.outputs.checksum_file }}
+            ${{ steps.msi.outputs.artifact_path }}

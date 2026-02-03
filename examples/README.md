@@ -11,7 +11,9 @@ Workflow examples for rust-release-action.
 | [linux-packages.yml](linux-packages.yml) | Debian, RPM, and Alpine packages |
 | [installers.yml](installers.yml) | macOS DMG and Windows MSI |
 | [package-managers.yml](package-managers.yml) | Homebrew, AUR, and Winget manifests |
-| [security.yml](security.yml) | SBOM and Sigstore signing |
+| [supply_chain_security.yml](supply_chain_security.yml) | SBOM and Sigstore signing |
+| [verify-artifacts.yml](verify-artifacts.yml) | Test packages across distributions |
+| [build-with-verification.yml](build-with-verification.yml) | Build and test in one workflow |
 | [complete.yml](complete.yml) | Everything combined |
 
 ## Usage

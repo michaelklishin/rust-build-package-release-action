@@ -63,7 +63,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           URL="https://github.com/${{ github.repository }}/archive/refs/tags/${{ env.VERSION }}.tar.gz"
-          SHA256=$(curl -sL "$URL" | sha256sum | cut -d' ' -f1)
+          AUTH_HEADER=""
+          if [ -n "$GH_TOKEN" ]; then
+            AUTH_HEADER="Authorization: Bearer $GH_TOKEN"
+          fi
+          SHA256=$(curl -sL ${AUTH_HEADER:+-H "$AUTH_HEADER"} "$URL" | sha256sum | cut -d' ' -f1)
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
 
