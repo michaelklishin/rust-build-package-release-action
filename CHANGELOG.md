@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.20.0 (unreleased)
+
+(no changes yet)
+
 ## v1.19.0 (Feb 3, 2026)
 
 ### Enhancements
