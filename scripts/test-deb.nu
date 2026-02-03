@@ -6,7 +6,16 @@ use common.nu [error, output]
 use test-common.nu [verify-checksum, verify-installed-binary]
 use download-release.nu [download-artifact]
 
+# Installs sudo if missing (minimal containers often lack it)
+def ensure-sudo [] {
+    if (which sudo | length) > 0 { return }
+    print "  sudo not found, installing..."
+    do { apt-get update -qq } | complete
+    do { apt-get install -y -qq sudo } | complete
+}
+
 def main [] {
+    ensure-sudo
     let download_from_release = ($env.DOWNLOAD_FROM_RELEASE? | default "false") == "true"
     let binary_name = $env.BINARY_NAME? | default ""
     let version = $env.VERSION? | default ""
