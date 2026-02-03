@@ -14,25 +14,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate:
-    name: Validate Version
-    runs-on: ubuntu-22.04
-    timeout-minutes: 5
-    outputs:
-      version: ${{ steps.validate.outputs.version }}
-    steps:
-      # v6.0.2
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - uses: ./
-        id: validate
-        with:
-          command: validate-version
-          expected-version: ${{ vars.NEXT_RELEASE_VERSION }}
-
   release:
     name: Create Release
-    needs: validate
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -40,13 +23,18 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - uses: ./
+        id: version
+        with:
+          command: get-version
+
+      - uses: ./
         with:
           command: extract-changelog
-          version: ${{ needs.validate.outputs.version }}
+          version: ${{ steps.version.outputs.version }}
 
       # v2.5.0
       - uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         with:
-          tag_name: v${{ needs.validate.outputs.version }}
-          name: v${{ needs.validate.outputs.version }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
           body_path: release_notes.md
