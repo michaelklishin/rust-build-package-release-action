@@ -45,7 +45,7 @@ def main [] {
 
     # Output options
     if ($env.INPUT_CHECKSUM? | default "") != "" { $env.CHECKSUM = $env.INPUT_CHECKSUM }
-    if ($env.INPUT_INCLUDE? | default "") != "" { $env.INCLUDE = $env.INPUT_INCLUDE }
+    if ($env.INPUT_INCLUDE? | default "") != "" { $env.ARCHIVE_INCLUDE = $env.INPUT_INCLUDE }
 
     # Changelog options
     if ($env.INPUT_CHANGELOG? | default "") != "" { $env.CHANGELOG_PATH = $env.INPUT_CHANGELOG }

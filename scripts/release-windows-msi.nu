@@ -2,6 +2,32 @@
 
 use common.nu [get-cargo-info, output, copy-docs, copy-includes, ensure-lockfile, cargo-build, hr-line, error, check-rust-toolchain, generate-checksums, output-build-results, run-pre-build-hook]
 
+# Gets the manifest path for a package in a workspace
+def get-package-manifest-path [package_name: string]: nothing -> string {
+    let metadata = cargo metadata --format-version 1 --no-deps | from json
+    let pkg = $metadata.packages | where name == $package_name | first
+    $pkg.manifest_path
+}
+
+# Finds WiX source files, checking package directory for workspaces
+def find-wix-files [package_name: string]: nothing -> list<string> {
+    # First check root wix/ directory
+    let root_files = glob "wix/*.wxs"
+    if ($root_files | is-not-empty) {
+        return $root_files
+    }
+
+    # For workspace packages, check the package's directory
+    if $package_name != "" {
+        let manifest_path = get-package-manifest-path $package_name
+        let pkg_dir = $manifest_path | path dirname
+        let pkg_pattern = $"($pkg_dir)/wix/*.wxs"
+        glob $pkg_pattern
+    } else {
+        []
+    }
+}
+
 # Checks that WiX Toolset is available, installs if missing
 def check-wix-toolset [] {
     # Check if candle.exe (WiX compiler) is in PATH or WIX env var is set
@@ -65,8 +91,7 @@ def main [] {
     }
 
     # Check for WiX source files early, before expensive operations
-    let wxs_pattern = "wix/*.wxs"
-    let wxs_files = glob $wxs_pattern
+    let wxs_files = find-wix-files $package_name
     if ($wxs_files | is-empty) {
         error "No WiX source files found. Run 'cargo wix init' to generate them, or create wix/*.wxs files manually."
     }

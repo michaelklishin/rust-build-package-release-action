@@ -32,7 +32,7 @@ export def copy-docs [dest: string] {
 
 # Copies additional include files to the destination
 export def copy-includes [dest: string] {
-    let includes = $env.INCLUDE? | default ""
+    let includes = $env.ARCHIVE_INCLUDE? | default ""
     if $includes != "" {
         $includes | split row "," | each {|pattern|
             let pattern = $pattern | str trim
