@@ -6,7 +6,7 @@
 built as a collection of Nu shell scripts.
 
 This is a conventions-based, opinionated release process extracted from:
- 
+
  * [rabbitmq/rabbitmqadmin-ng](https://github.com/rabbitmq/rabbitmqadmin-ng)
  * [michaelklishin/rabbitmq-lqt](https://github.com/michaelklishin/rabbitmq-lqt)
  * [michaelklishin/frm](https://github.com/michaelklishin/frm)
@@ -30,6 +30,8 @@ nu scripts/get-version.nu
 Note: this requires taking care of some script-specific environment variables.
 
 See `CONTRIBUTING.md` as well.
+
+For verifying YAML file syntax, use `yq`, Ruby or Python YAML modules (whichever is available).
 
 ## Key Files
 

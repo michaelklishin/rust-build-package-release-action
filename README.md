@@ -17,10 +17,10 @@ An opinionated, conventions-based GitHub Action that automates release workflows
 
 This action expects:
 
- 1. **Changelog format**: versions as `## v{version} ({date})` headers
- 2. **Tag format**: tags prefixed with `v` (e.g., `v1.2.3`, `v1.0.0-beta.1`)
- 3. **Versioning**: `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` format
- 4. **Version variable**: a repository variable `NEXT_RELEASE_VERSION` containing the expected next version (used by `validate-version`)
+ 1. A certain [changelog format](https://github.com/rabbitmq/rabbitmqadmin-ng/blob/main/CHANGELOG.md): versions as `## v{version} ({date})` headers
+ 2. Tag format: tags prefixed with `v` (e.g., `v1.2.3`, `v1.0.0-beta.1`)
+ 3. Versioning: `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` format
+ 4. Version variable: a repository variable `NEXT_RELEASE_VERSION` containing the expected next version (used by `validate-version`)
 
 ---
 
@@ -630,7 +630,11 @@ jobs:
 
 ## License
 
-Licensed under either of:
+This Action is dual-licensed under:
 
  * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
  * MIT license ([LICENSE-MIT](LICENSE-MIT))
+
+ ## Copyright
+
+ 2025-2026 (c) Michael S. Klishin and Contributors.
