@@ -51,8 +51,9 @@ def ensure-curl [] {
     let apt = do { apt-get update -qq } | complete
     if $apt.exit_code == 0 {
         do { apt-get install -y -qq curl } | complete
-    } else {
-        # Try dnf (Fedora/RHEL)
+    }
+    # Try dnf if curl still missing (Fedora/RHEL)
+    if (which curl | length) == 0 {
         do { dnf install -y -q curl } | complete
     }
     if (which curl | length) == 0 {

@@ -8,7 +8,7 @@
 
 ### Bug Fixes
 
- * `download-release`: fall back to nushell's `http get` when `curl` is unavailable
+ * `download-release`: install `curl` if missing, fall back to Nu's `http` module if all else fails
 
 ## v1.20.1 (Feb 3, 2026)
 
