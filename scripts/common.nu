@@ -164,7 +164,7 @@ def has-cargo-feature [feature: string]: nothing -> bool {
     $feature in ($pkg.features | columns)
 }
 
-# Builds with cargo rustc using the environment configuration
+# Builds with cargo rustc or cargo-zigbuild using the environment configuration
 export def cargo-build [target: string, binary_name: string] {
     let package = $env.PACKAGE? | default ""
     let no_default_features = $env.NO_DEFAULT_FEATURES? | default "" | $in == "true"
@@ -172,25 +172,30 @@ export def cargo-build [target: string, binary_name: string] {
     let locked = $env.LOCKED? | default "" | $in == "true"
     let profile = $env.PROFILE? | default "release"
     let target_rustflags = $env.TARGET_RUSTFLAGS? | default ""
+    let use_zigbuild = $env.USE_ZIGBUILD? | default "" | $in == "true"
 
     if $target_rustflags != "" {
         $env.RUSTFLAGS = $target_rustflags
     }
 
-    # For musl targets, enables static linking
-    if ($target =~ "musl") and ($env.RUSTFLAGS? | default "" | is-empty) {
+    # For musl targets without zigbuild, set static linking
+    if ($target =~ "musl") and (not $use_zigbuild) and ($env.RUSTFLAGS? | default "" | is-empty) {
         $env.RUSTFLAGS = "-C target-feature=+crt-static"
     }
 
-    # For musl targets, auto-enable mimalloc feature if available (improves performance)
+    # For musl targets, auto-enable mimalloc if available
     if ($target =~ "musl") and (not ($features =~ "mimalloc")) and (has-cargo-feature "mimalloc") {
         print $"(ansi green)Enabling mimalloc feature for musl build(ansi reset)"
         $features = if $features == "" { "mimalloc" } else { $"($features),mimalloc" }
     }
 
-    mut args = ["rustc" "--target" $target "-q"]
+    mut args = if $use_zigbuild {
+        check-zigbuild
+        ["zigbuild" "--target" $target]
+    } else {
+        ["rustc" "--target" $target "-q"]
+    }
 
-    # Handle profile
     if $profile == "release" {
         $args = ($args | append "--release")
     } else if $profile != "dev" {
@@ -417,6 +422,21 @@ export def check-cargo-sbom [] {
     if (which cargo-sbom | is-empty) {
         print $"(ansi yellow)cargo-sbom not found, installing...(ansi reset)"
         cargo install cargo-sbom
+    }
+}
+
+# Checks that cargo-zigbuild is available, installs if missing
+export def check-zigbuild [] {
+    if (which cargo-zigbuild | is-not-empty) {
+        return
+    }
+    print $"(ansi yellow)cargo-zigbuild not found, installing...(ansi reset)"
+    if (which pip3 | is-not-empty) {
+        pip3 install cargo-zigbuild
+    } else if (which pipx | is-not-empty) {
+        pipx install cargo-zigbuild
+    } else {
+        cargo install cargo-zigbuild
     }
 }
 

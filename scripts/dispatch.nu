@@ -40,6 +40,7 @@ def main [] {
     if ($env.INPUT_SKIP_BUILD? | default "") == "true" { $env.SKIP_BUILD = "true" }
     if ($env.INPUT_LOCKED? | default "") == "true" { $env.LOCKED = "true" }
     if ($env.INPUT_NO_DEFAULT_FEATURES? | default "") == "true" { $env.NO_DEFAULT_FEATURES = "true" }
+    if ($env.INPUT_USE_ZIGBUILD? | default "") == "true" { $env.USE_ZIGBUILD = "true" }
     if ($env.INPUT_ARCHIVE? | default "") == "true" { $env.ARCHIVE = "true" }
 
     # Output options

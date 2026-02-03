@@ -65,6 +65,10 @@ inputs:
   rustflags:
     description: 'Extra RUSTFLAGS for the build'
     required: false
+  use-zigbuild:
+    description: 'Use cargo-zigbuild for cross-compilation (e.g., musl targets)'
+    required: false
+    default: 'false'
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Output options - control artifact generation
@@ -496,6 +500,7 @@ runs:
         INPUT_LOCKED: ${{ inputs.locked }}
         INPUT_NO_DEFAULT_FEATURES: ${{ inputs.no-default-features }}
         INPUT_RUSTFLAGS: ${{ inputs.rustflags }}
+        INPUT_USE_ZIGBUILD: ${{ inputs.use-zigbuild }}
         INPUT_ARCHIVE: ${{ inputs.archive }}
         INPUT_CHECKSUM: ${{ inputs.checksum }}
         INPUT_INCLUDE: ${{ inputs.include }}

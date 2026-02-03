@@ -5,6 +5,7 @@ An opinionated, conventions-based GitHub Action that automates release workflows
 ## Features
 
  * Build release binaries for Linux, macOS, and Windows from a single workflow
+ * Cross-compile with `cargo-zigbuild` for targets like `aarch64-unknown-linux-musl`
  * Package as `.deb`, `.rpm`, `.apk` (Linux), `.dmg` (macOS), or `.msi` (Windows)
  * Generate Homebrew formulae, AUR PKGBUILDs, and Winget manifests
  * Sign artifacts with Sigstore/cosign
@@ -108,6 +109,18 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 | `locked` | Build with `--locked` for reproducible builds | `false` |
 | `no-default-features` | Build with `--no-default-features` | `false` |
 | `rustflags` | Extra RUSTFLAGS for the build | — |
+| `use-zigbuild` | Use `cargo-zigbuild` for cross-compilation | `false` |
+
+#### Example: Cross-compile aarch64-linux-musl with zigbuild
+
+```yaml
+- uses: michaelklishin/rust-release-action@v0
+  with:
+    command: release-linux
+    target: aarch64-unknown-linux-musl
+    use-zigbuild: 'true'
+    archive: 'true'
+```
 
 #### Example: Static musl build with specific features
 

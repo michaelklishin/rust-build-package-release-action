@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.15.0 (Feb 2, 2026)
+
+### New Features
+
+ * Support for cross-compilation via `cargo-zigbuild` (for the painful-to-get-right `aarch64-unknown-linux-musl` target)
+
 ## v1.14.0 (Feb 2, 2026)
 
 ### Bug Fixes
