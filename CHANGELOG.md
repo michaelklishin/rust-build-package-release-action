@@ -10,6 +10,7 @@
 
  * Fix Windows SDK `INCLUDE` path conflict by renaming internal env var to `ARCHIVE_INCLUDE`
  * Add workspace-aware WiX file lookup for MSI builds using `cargo metadata`
+ * Fix Windows path normalization in workspace WiX lookup
 
 ## v1.17.0 (Feb 2, 2026)
 
