@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.23.1 (Feb 3, 2026)
+
+### Bug Fixes
+
+ * `test-windows`: normalize paths to backslashes for msiexec
+
 ## v1.23.0 (Feb 3, 2026)
 
 ### Bug Fixes
