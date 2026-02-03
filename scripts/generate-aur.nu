@@ -4,15 +4,15 @@ use common.nu [get-cargo-info, output, output-multiline, hr-line, error]
 
 def main [] {
     let info = get-cargo-info
-    let binary_name = $env.BINARY_NAME? | default $info.name
-    let pkg_name = $env.AUR_PACKAGE_NAME? | default $binary_name
+    let default_name = $env.BINARY_NAME? | default $info.name
+    let pkg_name = $env.AUR_PACKAGE_NAME? | default $default_name
     let version = $env.VERSION? | default $info.version
 
     if $pkg_name == "" {
-        error "could not determine package name! Make sure that either the 'aur-name' or the 'binary-name' input is set"
+        error "could not determine package name - set 'aur-name' or 'binary-name'"
     }
     if $version == "" {
-        error "could not determine version! Make sure the 'version' input is set"
+        error "could not determine version - set the 'version' input"
     }
 
     let description = $env.PKG_DESCRIPTION? | default $"($pkg_name) - built with rust-release-action"
