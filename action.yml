@@ -500,7 +500,7 @@ runs:
   steps:
     - name: Setup Nu shell
       # v3.17
-      uses: hustcer/setup-nu@9e713eb2a9c4c5c7f7aa4278295684786bdfb280
+      uses: hustcer/setup-nu@0000000ae6a4e242e802c943f465373b70b07469
       with:
         version: '0.110.0'
 
