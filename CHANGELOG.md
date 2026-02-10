@@ -1,8 +1,11 @@
 # Changelog
 
-## v1.25.0 (in development)
+## v2.0.0 (in development)
 
-(no changes yet)
+### Internal Changes
+
+ * The Action is now backed by a native binary instead of a collection of Nu shell scripts
+
 
 ## v1.24.0 (Feb 8, 2026)
 

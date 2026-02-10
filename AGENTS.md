@@ -3,7 +3,7 @@
 ## Project Overview
 
 `rust-build-package-release-action` is an **opinionated** GitHub Action that automates release workflows for Rust projects,
-built as a collection of Nu shell scripts.
+built as a single Rust binary crate with clap subcommands (edition 2024, rust-version 1.85).
 
 This is a conventions-based, opinionated release process extracted from:
 
@@ -16,18 +16,14 @@ This is a conventions-based, opinionated release process extracted from:
 Run all tests:
 
 ```bash
-nu tests/run.nu
+cargo test
 ```
 
-Run individual scripts:
+Run clippy:
 
 ```bash
-nu scripts/extract-changelog.nu
-nu scripts/validate-version.nu
-nu scripts/get-version.nu
+cargo clippy --all-targets -- -D warnings
 ```
-
-Note: this requires taking care of some script-specific environment variables.
 
 See `CONTRIBUTING.md` as well.
 
@@ -36,49 +32,44 @@ For verifying YAML file syntax, use `yq`, Ruby or Python YAML modules (whichever
 ## Key Files
 
  * `action.yml`: GitHub Action definition
- * `scripts/dispatch.nu`: command dispatcher (routes inputs to scripts)
- * `scripts/common.nu`: shared utilities (`cargo-build`, `generate-checksums`, `output-build-results`)
- * `scripts/extract-changelog.nu`: extracts release details from a change log file (see `rabbitmqadmin-ng` for example)
- * `scripts/validate-changelog.nu`: validates that a changelog entry exists for a version
- * `scripts/validate-version.nu`: version validation logic, including pre-release versions
- * `scripts/collect-artifacts.nu`: collects artifacts, computes checksums, outputs structured data for Homebrew/Winget
- * `scripts/release.nu`: unified release command that auto-selects platform from target triple
- * `scripts/get-version.nu`: reads version from `Cargo.toml`
- * `scripts/generate-sbom.nu`: generates SPDX and CycloneDX SBOMs via cargo-sbom
- * `scripts/release-linux.nu`: Linux build script
- * `scripts/release-linux-deb.nu`: Linux .deb package via nfpm
- * `scripts/release-linux-rpm.nu`: Linux .rpm package via nfpm
- * `scripts/release-linux-apk.nu`: Linux .apk package via nfpm
- * `scripts/release-macos.nu`: macOS build script
- * `scripts/release-macos-dmg.nu`: macOS .dmg installer via hdiutil
- * `scripts/release-windows.nu`: Windows build script
- * `scripts/release-windows-msi.nu`: Windows MSI installer via cargo-wix
- * `scripts/generate-homebrew.nu`: Homebrew formula generator
- * `scripts/generate-aur.nu`: Arch Linux PKGBUILD generator
- * `scripts/generate-winget.nu`: Winget manifest generator
- * `scripts/sign-artifact.nu`: Sigstore/cosign signing
- * `scripts/format-release.nu`: GitHub Release body formatter
- * `scripts/test-common.nu`: shared functions for artifact testing
- * `scripts/test-deb.nu`: tests Debian packages (install, verify version, uninstall)
- * `scripts/test-rpm.nu`: tests RPM packages (install, verify version, uninstall)
- * `scripts/test-windows.nu`: tests Windows binaries and MSI installers
- * `scripts/download-release.nu`: downloads artifacts from GitHub releases
- * `scripts/get-release-version.nu`: fetches latest release version from GitHub
- * `tests/run.nu`: Nu shell test runner
- * `tests/nu/*.nu`: unit tests for pure functions
- * `examples/*.yml`: workflow examples for a few common scenarios
+ * `Cargo.toml`: crate manifest
+ * `src/main.rs`: clap CLI and command dispatcher (routes subcommands to modules)
+ * `src/lib.rs`: shared utilities (`env_or`, `parse_comma_list`) and module re-exports
+ * `src/error.rs`: error type and `Result` alias
+ * `src/output.rs`: GitHub Actions output helpers (`output`, `output_multiline`, `print_hr`)
+ * `src/platform.rs`: target triple parsing and platform detection
+ * `src/version.rs`: version validation, `get-version`, `get-release-version`
+ * `src/cargo_info.rs`: reads package metadata from `Cargo.toml`
+ * `src/changelog.rs`: extracts and validates changelog entries
+ * `src/build.rs`: cargo build orchestration
+ * `src/archive.rs`: archive file listing, doc copying, include handling
+ * `src/checksum.rs`: SHA-256, SHA-512, BLAKE2 checksum generation and verification
+ * `src/collect_artifacts.rs`: collects artifacts, computes checksums, outputs structured data for Homebrew/Winget
+ * `src/release.rs`: unified release command that auto-selects platform from target triple
+ * `src/nfpm.rs`: nfpm config generation for .deb/.rpm/.apk packages
+ * `src/homebrew.rs`: Homebrew formula generator
+ * `src/aur.rs`: Arch Linux PKGBUILD generator
+ * `src/winget.rs`: Winget manifest generator
+ * `src/format_release.rs`: GitHub Release body formatter
+ * `src/sbom.rs`: SPDX and CycloneDX SBOM generation via cargo-sbom
+ * `src/sign.rs`: Sigstore/cosign artifact signing
+ * `src/download.rs`: downloads artifacts from GitHub releases
+ * `src/testing.rs`: tests Debian/RPM packages and Windows binaries
+ * `src/tools.rs`: external tool installation (cross, cargo-zigbuild, nfpm, etc.)
+ * `tests/test_helpers.rs`: shared test utilities (`create_temp_file`, `create_temp_text_file`)
+ * `tests/*_tests.rs`: unit tests for each module
+ * `tests/*_proptests.rs`: property-based tests (proptest) for version, changelog, platform
+ * `examples/*.yml`: workflow examples for common scenarios
 
-## Nu Script Style
+## Rust Style
 
- * Format all Nu scripts with [nufmt](https://github.com/nushell/nufmt) before committing
- * Use 4-space indentation (nufmt default)
- * Avoid multiline string interpolation in heredoc style; use array-based string building with `| str join "\n"` instead
- * Use `def main []` as script entry point
- * Use `$env.VARIABLE?` with `| default ""` for optional env vars
- * Exit with code 1 on errors, produce brief but helpful messages
- * Write to `$env.GITHUB_OUTPUT` for action outputs
+ * Use `use` statements at the top module level, never in function scope
+ * Avoid fully qualified type paths (e.g. `std::fmt::Display`) unless needed for disambiguation
+ * All tests go in `tests/` as integration tests, not inline `#[cfg(test)]` modules
+ * Use `LazyLock<Mutex<()>>` to serialise tests that modify process-wide state (env vars, CWD)
+ * Mark `env::set_var` and `env::remove_var` calls as `unsafe` with a safety comment
+ * Format with `cargo fmt --all`, lint with `cargo clippy --all-features --all`
  * Only add important comments
- * For regex patterns in `where` clauses, assign the pattern to a variable first to avoid breaking `nufmt`
 
 ## Git Conventions
 

@@ -498,21 +498,16 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup Nu shell
-      # v3.17
-      uses: hustcer/setup-nu@0000000ae6a4e242e802c943f465373b70b07469
-      with:
-        version: '0.110.0'
+    - name: Build action binary
+      shell: bash
+      run: cargo build --release --manifest-path "${{ github.action_path }}/Cargo.toml"
 
     - name: Run command
       id: run
-      shell: nu {0}
+      shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: |
-        $env.NU_LIB_DIRS = [$"($env.GITHUB_ACTION_PATH)/scripts"]
-        nu $"($env.GITHUB_ACTION_PATH)/scripts/dispatch.nu"
+      run: "${{ github.action_path }}/target/release/rust-release-action" "${{ inputs.command }}"
       env:
-        GITHUB_ACTION_PATH: ${{ github.action_path }}
         # All inputs passed as INPUT_* environment variables
         INPUT_COMMAND: ${{ inputs.command }}
         INPUT_VERSION: ${{ inputs.version }}
