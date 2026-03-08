@@ -18,6 +18,33 @@ use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
+/// Copy a file with retries to work around Windows file locking (os error 32)
+/// from anti-virus scanners and file indexing services.
+/// Uses a read followed by a write instead of fs::copy to avoid requesting exclusive access
+fn copy_with_retry(from: &str, to: &str) -> Result<()> {
+    let max_attempts = 5;
+    for attempt in 1..=max_attempts {
+        match fs::read(from) {
+            Ok(data) => {
+                fs::write(to, data)?;
+                return Ok(());
+            }
+            Err(e) => {
+                if attempt < max_attempts {
+                    let delay = 10 * attempt;
+                    println!(
+                        "\x1b[33mFile copy attempt {attempt}/{max_attempts} failed ({e}), retrying in {delay}s...\x1b[0m"
+                    );
+                    thread::sleep(Duration::from_secs(delay as u64));
+                } else {
+                    return Err(e.into());
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Common build logic for release commands that produce a binary.
 struct BuildContext {
     binary_name: String,
@@ -972,9 +999,9 @@ pub fn run_release_windows_msi() -> Result<()> {
             )));
         }
         fs::create_dir_all(&release_dir)?;
-        fs::copy(
+        copy_with_retry(
             &custom_binary_path,
-            format!("{release_dir}/{binary_name}.exe"),
+            &format!("{release_dir}/{binary_name}.exe"),
         )?;
     } else {
         let _ = fs::remove_dir_all(&release_dir);
@@ -1008,18 +1035,41 @@ pub fn run_release_windows_msi() -> Result<()> {
 
     let msi_path = format!("target/wix/{binary_name}-{version}-{target}.msi");
     println!("\x1b[32mCreating MSI package...\x1b[0m");
-    run_command_inherit(
-        "cargo",
-        &[
-            "wix",
-            "--no-build",
-            "--nocapture",
-            "--package",
-            &package_name,
-            "--output",
-            &msi_path,
-        ],
-    )?;
+
+    // Retry cargo-wix: Windows anti-virus and file indexing
+    // can hold file handles after the copy above (os error 32)
+    let wix_args = [
+        "wix",
+        "--no-build",
+        "--nocapture",
+        "--package",
+        &package_name,
+        "--output",
+        &msi_path,
+    ];
+    let max_attempts = 5;
+    let mut last_err = None;
+    for attempt in 1..=max_attempts {
+        match run_command_inherit("cargo", &wix_args) {
+            Ok(()) => {
+                last_err = None;
+                break;
+            }
+            Err(e) => {
+                if attempt < max_attempts {
+                    let delay = 10 * attempt;
+                    println!(
+                        "\x1b[33mcargo-wix attempt {attempt}/{max_attempts} failed, retrying in {delay}s...\x1b[0m"
+                    );
+                    thread::sleep(Duration::from_secs(delay as u64));
+                }
+                last_err = Some(e);
+            }
+        }
+    }
+    if let Some(e) = last_err {
+        return Err(e);
+    }
 
     if !Path::new(&msi_path).exists() {
         return Err(Error::User(format!("MSI not created: {msi_path}")));
