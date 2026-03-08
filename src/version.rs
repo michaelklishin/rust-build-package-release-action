@@ -37,17 +37,10 @@ pub fn run_validate_version() -> Result<()> {
         process::exit(1);
     }
 
-    if expected.is_empty() {
-        eprintln!("\x1b[31mERROR:\x1b[0m NEXT_RELEASE_VERSION variable is not set");
-        eprintln!();
-        eprintln!("Set it at: Settings > Secrets and variables > Actions > Variables");
-        process::exit(1);
-    }
-
     if !tag.starts_with('v') {
         eprintln!("\x1b[31mERROR:\x1b[0m Tag should start with 'v', got '{tag}'");
         eprintln!();
-        eprintln!("Push a tag like: git tag v{expected} && git push origin v{expected}");
+        eprintln!("Push a tag like: git tag v1.2.3 && git push origin v1.2.3");
         process::exit(1);
     }
 
@@ -61,23 +54,28 @@ pub fn run_validate_version() -> Result<()> {
         process::exit(1);
     }
 
-    if expected == tag_version {
-        println!("\x1b[32mVersion validated:\x1b[0m {expected} matches tag {tag}");
-        output("version", tag_version);
+    if !expected.is_empty() {
+        if expected == tag_version {
+            println!("\x1b[32mVersion validated:\x1b[0m {expected} matches tag {tag}");
+        } else {
+            eprintln!(
+                "\x1b[31mERROR:\x1b[0m Expected version ({expected}) does not match tag ({tag})"
+            );
+            eprintln!();
+            eprintln!("Either:");
+            eprintln!(
+                "  1. Update expected-version to '{tag_version}'"
+            );
+            eprintln!(
+                "  2. Or push the correct tag: git tag v{expected} && git push origin v{expected}"
+            );
+            process::exit(1);
+        }
     } else {
-        eprintln!(
-            "\x1b[31mERROR:\x1b[0m NEXT_RELEASE_VERSION ({expected}) does not match tag ({tag})"
-        );
-        eprintln!();
-        eprintln!("Either:");
-        eprintln!(
-            "  1. Update NEXT_RELEASE_VERSION to '{tag_version}' at: Settings > Secrets and variables > Actions > Variables"
-        );
-        eprintln!(
-            "  2. Or push the correct tag: git tag v{expected} && git push origin v{expected}"
-        );
-        process::exit(1);
+        println!("\x1b[32mVersion extracted:\x1b[0m {tag_version} (from tag {tag})");
     }
+
+    output("version", tag_version);
 
     if validate_cargo {
         let cargo_info = get_cargo_info()?;

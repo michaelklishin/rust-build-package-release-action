@@ -14,18 +14,11 @@ def main [] {
         exit 1
     }
 
-    if $expected == "" {
-        print $"(ansi red)ERROR:(ansi reset) NEXT_RELEASE_VERSION variable is not set"
-        print ""
-        print "Set it at: Settings > Secrets and variables > Actions > Variables"
-        exit 1
-    }
-
     # Check if this looks like a version tag (supports semver with pre-release)
     if not ($tag | str starts-with "v") {
         print $"(ansi red)ERROR:(ansi reset) Tag should start with 'v', got '($tag)'"
         print ""
-        print $"Push a tag like: git tag v($expected) && git push origin v($expected)"
+        print "Push a tag like: git tag v1.2.3 && git push origin v1.2.3"
         exit 1
     }
 
@@ -42,17 +35,22 @@ def main [] {
         exit 1
     }
 
-    if $expected == $tag_version {
-        print $"(ansi green)Version validated:(ansi reset) ($expected) matches tag ($tag)"
-        output "version" $tag_version
+    if $expected != "" {
+        if $expected == $tag_version {
+            print $"(ansi green)Version validated:(ansi reset) ($expected) matches tag ($tag)"
+        } else {
+            print $"(ansi red)ERROR:(ansi reset) Expected version (($expected)) does not match tag (($tag))"
+            print ""
+            print "Either:"
+            print $"  1. Update expected-version to '($tag_version)'"
+            print $"  2. Or push the correct tag: git tag v($expected) && git push origin v($expected)"
+            exit 1
+        }
     } else {
-        print $"(ansi red)ERROR:(ansi reset) NEXT_RELEASE_VERSION (($expected)) does not match tag (($tag))"
-        print ""
-        print "Either:"
-        print $"  1. Update NEXT_RELEASE_VERSION to '($tag_version)' at: Settings > Secrets and variables > Actions > Variables"
-        print $"  2. Or push the correct tag: git tag v($expected) && git push origin v($expected)"
-        exit 1
+        print $"(ansi green)Version extracted:(ansi reset) ($tag_version) (from tag ($tag))"
     }
+
+    output "version" $tag_version
 
     if $validate_cargo {
         let cargo_info = get-cargo-info

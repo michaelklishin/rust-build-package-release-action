@@ -104,7 +104,7 @@ inputs:
     description: 'Git tag to validate (defaults to GITHUB_REF_NAME)'
     required: false
   expected-version:
-    description: 'Expected version (defaults to NEXT_RELEASE_VERSION variable)'
+    description: 'Expected version to validate against the tag (optional)'
     required: false
   validate-cargo-toml:
     description: 'Also validate that Cargo.toml version matches the tag'

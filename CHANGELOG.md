@@ -7,6 +7,7 @@
  * A new `publish-crate` command for publishing to crates.io with Trusted Publishing (OIDC) support
  * `publish-dry-run` is a new input for validating packaging without publishing
  * New example workflows: `trusted-publishing.yml`, `publish-crate-only.yml`
+ * `validate-version`: the `expected-version` check is now optional (version is extracted from the tag when omitted)
 
 ### Internal Changes
 
