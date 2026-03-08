@@ -7,7 +7,7 @@
 #   1. Create a GitHub Actions environment named "release" (Settings > Environments)
 #   2. Register a Trusted Publisher on crates.io (crate settings > Trusted Publishing)
 #      - GitHub owner, repo name, workflow filename ("release.yml"), environment ("release")
-#   3. Set NEXT_RELEASE_VERSION repository variable (Settings > Variables > Actions)
+#   3. (Optional) Set NEXT_RELEASE_VERSION repository variable for version validation
 name: Release
 
 on:

@@ -21,7 +21,7 @@ This action expects:
  1. A certain [changelog format](https://github.com/rabbitmq/rabbitmqadmin-ng/blob/main/CHANGELOG.md): versions as `## v{version} ({date})` headers
  2. Tag format: tags prefixed with `v` (e.g., `v1.2.3`, `v1.0.0-beta.1`)
  3. Versioning: `MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]` format
- 4. Version variable: a repository variable `NEXT_RELEASE_VERSION` containing the expected next version (used by `validate-version`)
+ 4. Version extraction: `validate-version` extracts the version from the git tag (optionally validates against an expected version)
 
 ---
 
@@ -220,12 +220,23 @@ For `validate-version` command.
 | Input | Description | Default |
 |-------|-------------|---------|
 | `tag` | Git tag to validate | `GITHUB_REF_NAME` |
-| `expected-version` | Expected version to match (required) | — |
+| `expected-version` | Expected version to validate against the tag (optional) | — |
 | `validate-cargo-toml` | Also verify Cargo.toml version matches tag | `false` |
 
-#### Example: Validate version
+#### Example: Extract version from tag
 
-Set a repository variable `NEXT_RELEASE_VERSION` (e.g., `1.2.3`) in your repo settings, then:
+```yaml
+- uses: michaelklishin/rust-build-package-release-action@v1
+  id: validate
+  with:
+    command: validate-version
+```
+
+The version is extracted from the git tag and available as `${{ steps.validate.outputs.version }}`.
+
+#### Example: Validate version against expected value
+
+For binary projects, you can optionally validate the tag against an expected version:
 
 ```yaml
 - uses: michaelklishin/rust-build-package-release-action@v1
@@ -242,7 +253,6 @@ This fails the build if the git tag doesn't match the expected version, catching
 - uses: michaelklishin/rust-build-package-release-action@v1
   with:
     command: validate-version
-    expected-version: ${{ vars.NEXT_RELEASE_VERSION }}
     validate-cargo-toml: 'true'
 ```
 
@@ -539,7 +549,7 @@ See `examples/verify-artifacts.yml` for a complete multi-distribution testing wo
 | `release` | Unified build command (auto-selects platform from target triple) |
 | `extract-changelog` | Extract release notes from CHANGELOG.md |
 | `validate-changelog` | Validate changelog has entry for version |
-| `validate-version` | Validate git tag matches expected version (optionally checks Cargo.toml) |
+| `validate-version` | Extract and validate version from git tag (optionally checks expected version and Cargo.toml) |
 | `get-version` | Get version from Cargo.toml |
 | `collect-artifacts` | Collect artifacts, compute checksums, generate SHA256SUMS |
 | `generate-sbom` | Generate SPDX and CycloneDX SBOMs |
