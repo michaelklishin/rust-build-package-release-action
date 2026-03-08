@@ -86,7 +86,7 @@ inputs:
     required: false
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Changelog options: for extract-changelog command
+  # Changelog options: for the `extract-changelog` command
   # ─────────────────────────────────────────────────────────────────────────────
   changelog:
     description: 'Path to CHANGELOG.md'
@@ -98,7 +98,7 @@ inputs:
     default: 'release_notes.md'
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Version validation: for validate-version command
+  # Version validation: for the `validate-version` command
   # ─────────────────────────────────────────────────────────────────────────────
   tag:
     description: 'Git tag to validate (defaults to GITHUB_REF_NAME)'
