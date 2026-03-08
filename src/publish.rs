@@ -112,9 +112,18 @@ fn check_registry_token() -> Result<()> {
     Ok(())
 }
 
-fn run_cargo_publish(args: &[String]) -> Result<()> {
+/// Run `cargo publish` and return whether the crate was actually published
+/// (false when the version already exists on crates.io).
+fn run_cargo_publish(args: &[String]) -> Result<bool> {
     let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
-    tools::run_command_inherit("cargo", &refs)
+    match tools::run_command("cargo", &refs) {
+        Ok(_) => Ok(true),
+        Err(Error::Command { stderr, .. }) if stderr.contains("already exists") => {
+            println!("\x1b[33mVersion already published — skipping (idempotent)\x1b[0m");
+            Ok(false)
+        }
+        Err(e) => Err(e),
+    }
 }
 
 pub fn run_publish_crate() -> Result<()> {
@@ -140,16 +149,25 @@ pub fn run_publish_crate() -> Result<()> {
         println!("\x1b[32mDry run passed\x1b[0m");
     }
 
-    run_cargo_publish(&build_publish_args(dry_run))?;
+    let published = run_cargo_publish(&build_publish_args(dry_run))?;
 
     if dry_run {
         println!("\x1b[32mDry run completed successfully\x1b[0m");
-    } else {
+    } else if published {
         println!("\x1b[32mPublished version {version} to crates.io\x1b[0m");
+    } else {
+        println!("\x1b[32mVersion {version} was already on crates.io\x1b[0m");
     }
 
     output("version", &version);
-    output("published", if dry_run { "false" } else { "true" });
+    output(
+        "published",
+        if published && !dry_run {
+            "true"
+        } else {
+            "false"
+        },
+    );
 
     Ok(())
 }
