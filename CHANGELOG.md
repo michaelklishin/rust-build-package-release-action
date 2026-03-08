@@ -4,8 +4,8 @@
 
 ### New Features
 
- * `publish-crate` command for publishing to crates.io with Trusted Publishing (OIDC) support
- * `publish-dry-run` input for validating packaging without publishing
+ * A new `publish-crate` command for publishing to crates.io with Trusted Publishing (OIDC) support
+ * `publish-dry-run` is a new input for validating packaging without publishing
  * New example workflows: `trusted-publishing.yml`, `publish-crate-only.yml`
 
 ### Internal Changes
