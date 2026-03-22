@@ -80,6 +80,36 @@ For verifying YAML file syntax, use `yq`, Ruby or Python YAML modules (whichever
 
  * Never add full stops to Markdown list items
 
+## Releases
+
+### How to Roll (Produce) a New Major Release
+
+GitHub Actions use **major version tags** (`@v1`, `@v2`, `@v3`) as their public API.
+Consumers pin to `@vN` and automatically receive all non-breaking updates.
+
+Suppose the current development version in `Cargo.toml` is `N.0.0` and `CHANGELOG.md` has
+a `## vN.0.0 (in development)` section at the top.
+
+To produce a new major release:
+
+ 1. Update the changelog: replace `(in development)` with today's date, e.g. `(Mar 22, 2026)`. Make sure all notable changes since the previous release are listed
+ 2. Commit with the message `N.0.0` (just the version number, nothing else)
+ 3. Tag the commit: `git tag vN.0.0`
+ 4. Move the floating major tag to the same commit: `git tag -f vN`
+ 5. Bump the dev version: set `Cargo.toml` version to `(N+1).0.0`
+ 6. Add a new `## v(N+1).0.0 (in development)` section to `CHANGELOG.md` with `No changes yet.` underneath
+ 7. Commit with the message `Bump dev version`
+ 8. Push: `git push && git push --tags --force`
+
+The `--force` on the tag push is required because the floating `vN` tag already exists
+on the remote and must be moved forward.
+
+### Notes
+
+ * This crate is `publish = false` — there is no crates.io publishing step
+ * The floating major tag (e.g. `v2`) is what consumers reference in their workflows
+ * The precise tag (e.g. `v2.0.0`) is for changelog traceability
+
 ## Reviews
 
 Perform up to twenty iterative reviews after completing a task. Look for:
