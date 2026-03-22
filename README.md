@@ -1,6 +1,6 @@
 # rust-build-package-release-action
 
-An opinionated, conventions-based GitHub Action that automates release workflows for Rust projects using Nu shell scripts.
+An opinionated, conventions-based GitHub Action that automates release workflows for Rust projects.
 
 ## Features
 
@@ -29,7 +29,7 @@ This action expects:
 
 ```yaml
 # Build a release binary (auto-selects platform from target)
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: release
     target: x86_64-unknown-linux-gnu
@@ -39,7 +39,7 @@ This action expects:
 Or use platform-specific commands:
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
@@ -65,7 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install stable --profile minimal
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v2
         id: build
         with:
           command: release
@@ -115,7 +115,7 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 #### Example: Cross-compile aarch64-linux-musl with zigbuild
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: release-linux
     target: aarch64-unknown-linux-musl
@@ -126,7 +126,7 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 #### Example: Static musl build with specific features
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: release-linux
     target: x86_64-unknown-linux-musl
@@ -142,7 +142,7 @@ Standard Cargo build flags. These map directly to familiar `cargo build` options
 For projects that require a frontend build (WASM, npm, etc.) before `cargo build`:
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
@@ -161,7 +161,7 @@ For Alpine/container workflows where the build happens in a separate step:
     cargo build --release --target x86_64-unknown-linux-musl
 
 # Package the pre-built binary
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: release-linux
     target: x86_64-unknown-linux-musl
@@ -183,7 +183,7 @@ Control artifact generation and checksums.
 #### Example: Archive with multiple checksums
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: release-linux
     target: x86_64-unknown-linux-gnu
@@ -207,7 +207,7 @@ For `extract-changelog` and `validate-changelog` commands.
 #### Example: Extract changelog
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: extract-changelog
     # version auto-detected from git tag (e.g., v1.2.3 -> 1.2.3)
@@ -226,7 +226,7 @@ For `validate-version` command.
 #### Example: Extract version from tag
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   id: validate
   with:
     command: validate-version
@@ -239,7 +239,7 @@ The version is extracted from the git tag and available as `${{ steps.validate.o
 For binary projects, you can optionally validate the tag against an expected version:
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: validate-version
     expected-version: ${{ vars.NEXT_RELEASE_VERSION }}
@@ -250,7 +250,7 @@ This fails the build if the git tag doesn't match the expected version, catching
 #### Example: Validate version with Cargo.toml check
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: validate-version
     validate-cargo-toml: 'true'
@@ -261,7 +261,7 @@ This fails the build if the git tag doesn't match the expected version, catching
 For `validate-changelog` command. Fails fast if no changelog entry exists for the release version.
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: validate-changelog
     version: '1.2.3'  # Or omit to auto-detect from git tag
@@ -283,14 +283,14 @@ For `collect-artifacts` command. Scans a directory, computes checksums, and outp
   with:
     path: artifacts
 
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   id: collect
   with:
     command: collect-artifacts
     artifacts-dir: artifacts
     base-url: 'https://github.com/${{ github.repository }}/releases/download/v${{ needs.validate.outputs.version }}'
 
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: generate-homebrew
     version: ${{ needs.validate.outputs.version }}
@@ -327,7 +327,7 @@ Shared metadata for Linux packages (deb/rpm/apk), Homebrew, AUR, and Winget.
 #### Example: Debian package with dependencies
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: release-linux-deb
     target: x86_64-unknown-linux-gnu
@@ -350,7 +350,7 @@ For `generate-sbom` command.
 #### Example: Generate SBOMs
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: generate-sbom
     sbom-format: 'spdx,cyclonedx'
@@ -376,7 +376,7 @@ For `generate-homebrew` command. SHA256 values come from build step outputs.
 #### Example: Generate Homebrew formula
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: generate-homebrew
     version: ${{ needs.build.outputs.version }}
@@ -397,7 +397,7 @@ For `sign-artifact` command.
 #### Example: Sign artifact
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: sign-artifact
     artifact: 'target/release/myapp-1.0.0.tar.gz'
@@ -420,7 +420,7 @@ For `format-release` command.
 #### Example: Format release body with installation instructions
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: format-release
     version: '1.0.0'
@@ -447,7 +447,7 @@ For `generate-aur` command.
 #### Example: Generate AUR PKGBUILD
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: generate-aur
     version: '1.0.0'
@@ -479,7 +479,7 @@ For `generate-winget` command.
 #### Example: Generate Winget manifest
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: generate-winget
     version: '1.0.0'
@@ -508,7 +508,7 @@ With `download-from-release: true`, the action fetches artifacts from the curren
 #### Example: Get latest release version
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   id: version
   with:
     command: get-release-version
@@ -518,7 +518,7 @@ With `download-from-release: true`, the action fetches artifacts from the curren
 If `version` is provided, it's used directly. Otherwise, the latest release tag is fetched from the GitHub API and the `v` prefix stripped. No authentication is required for public repos. For private repos, set `GITHUB_TOKEN` or `GH_TOKEN` in the environment:
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   id: version
   with:
     command: get-release-version
@@ -529,7 +529,7 @@ If `version` is provided, it's used directly. Otherwise, the latest release tag 
 #### Example: Verify packages from release
 
 ```yaml
-- uses: michaelklishin/rust-build-package-release-action@v1
+- uses: michaelklishin/rust-build-package-release-action@v2
   with:
     command: test-deb
     download-from-release: true
@@ -637,7 +637,7 @@ jobs:
       version: ${{ steps.validate.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v2
         id: validate
         with:
           command: validate-version
@@ -660,7 +660,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install stable --profile minimal
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v2
         id: build
         with:
           command: ${{ matrix.command }}
@@ -677,7 +677,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v2
         with:
           command: extract-changelog
           version: ${{ needs.validate.outputs.version }}
