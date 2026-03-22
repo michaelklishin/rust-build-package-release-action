@@ -219,13 +219,14 @@ jobs:
 
       - name: Create test files
         run: |
-          cat > Cargo.toml << 'EOF'
+          mkdir -p test-project
+          cat > test-project/Cargo.toml << 'EOF'
           [package]
           name = "test-project"
           version = "0.5.0"
           EOF
 
-          cat > CHANGELOG.md << 'EOF'
+          cat > test-project/CHANGELOG.md << 'EOF'
           # Changelog
 
           ## v0.5.0 (Jan 31, 2026)
@@ -243,6 +244,7 @@ jobs:
         id: version
         with:
           command: get-version
+          working-directory: test-project
 
       - name: Verify get-version output
         run: |
@@ -256,18 +258,19 @@ jobs:
         with:
           command: extract-changelog
           version: '0.5.0'
+          working-directory: test-project
 
       - name: Verify extract-changelog output
         run: |
-          if ! grep -q "## v0.5.0" release_notes.md; then
+          if ! grep -q "## v0.5.0" test-project/release_notes.md; then
             echo "error: missing version header"
             exit 1
           fi
-          if ! grep -q "New feature added" release_notes.md; then
+          if ! grep -q "New feature added" test-project/release_notes.md; then
             echo "error: missing expected content"
             exit 1
           fi
-          if grep -q "Previous release" release_notes.md; then
+          if grep -q "Previous release" test-project/release_notes.md; then
             echo "error: should not contain previous version content"
             exit 1
           fi
@@ -279,6 +282,7 @@ jobs:
           command: validate-version
           tag: v0.5.0
           expected-version: '0.5.0'
+          working-directory: test-project
 
       - name: Verify validate-version output
         run: |
