@@ -695,6 +695,90 @@ jobs:
 
 ---
 
+## macOS Support
+
+This action supports both Intel and Apple Silicon Macs. Each architecture requires a separate build on a native macOS runner.
+
+### Architecture Targets
+
+| Target | Runner | Hardware | Rust Toolchain |
+|--------|--------|----------|-----------------|
+| `x86_64-apple-darwin` | `macos-13` or older | Intel Mac | Native (installed via rustup) |
+| `aarch64-apple-darwin` | `macos-14` or newer | Apple Silicon (M1/M2/M3+) | Native (installed via rustup) |
+
+### Why Separate Runners?
+
+Apple Silicon runners can cross-compile to Intel targets, but building the **native** binary on the target architecture is more reliable for certification and performance. GitHub Actions provides:
+
+- `macos-13`: Intel hardware
+- `macos-14` and newer: Apple Silicon hardware
+
+### Building for Intel Macs
+
+```yaml
+- uses: michaelklishin/rust-build-package-release-action@v2
+  with:
+    command: release
+    target: x86_64-apple-darwin
+    archive: 'true'
+    locked: 'true'
+```
+
+Run this on `macos-13` for native Intel compilation.
+
+### Building for Both Architectures
+
+Use a matrix strategy to build both binaries in parallel:
+
+```yaml
+build:
+  runs-on: ${{ matrix.os }}
+  strategy:
+    matrix:
+      include:
+        - target: x86_64-apple-darwin
+          os: macos-13
+        - target: aarch64-apple-darwin
+          os: macos-14
+  steps:
+    - uses: actions/checkout@v4
+    - run: rustup toolchain install stable --profile minimal
+    - uses: michaelklishin/rust-build-package-release-action@v2
+      with:
+        command: release
+        target: ${{ matrix.target }}
+        archive: 'true'
+```
+
+### Homebrew Formulas with Multi-Arch Support
+
+After building for both architectures, generate a Homebrew formula that supports both:
+
+```yaml
+- uses: michaelklishin/rust-build-package-release-action@v2
+  with:
+    command: generate-homebrew
+    version: ${{ needs.validate.outputs.version }}
+    brew-macos-x64-url: 'https://github.com/you/repo/releases/download/v1.0.0/app-1.0.0-x86_64-apple-darwin.tar.gz'
+    brew-macos-x64-sha256: ${{ steps.intel.outputs.sha256 }}
+    brew-macos-arm64-url: 'https://github.com/you/repo/releases/download/v1.0.0/app-1.0.0-aarch64-apple-darwin.tar.gz'
+    brew-macos-arm64-sha256: ${{ steps.arm64.outputs.sha256 }}
+```
+
+Users then install with: `brew install you/tap/app`
+
+The formula automatically selects the correct binary for their architecture.
+
+### Example: macOS Multi-Arch Workflow
+
+See [`examples/macos-multi-arch.yml`](examples/macos-multi-arch.yml) for a complete workflow that:
+
+- Builds both Intel and ARM binaries in parallel on native runners
+- Uploads both to a GitHub Release
+- Generates a Homebrew formula supporting both architectures
+
+---
+
 ## More Examples
 
 The [`examples/`](examples/) directory contains ready-to-use workflow templates:
@@ -703,6 +787,7 @@ The [`examples/`](examples/) directory contains ready-to-use workflow templates:
 |----------|-------------|
 | [basic-release.yml](examples/basic-release.yml) | Single-platform Linux release |
 | [multi-platform.yml](examples/multi-platform.yml) | Linux, macOS, and Windows builds |
+| [macos-multi-arch.yml](examples/macos-multi-arch.yml) | Intel and Apple Silicon macOS builds with Homebrew formula |
 | [linux-packages.yml](examples/linux-packages.yml) | Debian, RPM, and Alpine packages |
 | [installers.yml](examples/installers.yml) | macOS DMG and Windows MSI |
 | [package-managers.yml](examples/package-managers.yml) | Homebrew, AUR, and Winget manifests |

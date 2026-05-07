@@ -61,6 +61,19 @@ For verifying YAML file syntax, use `yq`, Ruby or Python YAML modules (whichever
  * `tests/*_proptests.rs`: property-based tests (proptest) for version, changelog, platform
  * `examples/*.yml`: workflow examples for common scenarios
 
+## macOS Support
+
+Building macOS binaries requires a native runner:
+
+ * **Intel Mac (`x86_64-apple-darwin`)**: use `macos-13` or older runners for native compilation
+ * **Apple Silicon (`aarch64-apple-darwin`)**: use `macos-14` or newer runners for native compilation
+ * Building for Intel on Apple Silicon runners is technically possible but not recommended (cross-compilation adds complexity)
+ * Each architecture needs a separate build job with its corresponding runner
+ * The action generates Homebrew formulas that auto-select the correct binary per architecture
+ * Platform detection in `src/platform.rs` already handles both: `macos-x64` and `macos-arm64`
+
+For workflows, use a matrix strategy to build both in parallel. See `examples/macos-multi-arch.yml` for a complete example.
+
 ## Rust Style
 
  * Use `use` statements at the top module level, never in function scope

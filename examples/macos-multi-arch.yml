@@ -1,0 +1,152 @@
+# Build for both Intel (x86_64) and Apple Silicon (aarch64) macOS
+# Generates separate binaries and optional Homebrew formulas that support both architectures
+name: macOS Multi-Arch Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: michaelklishin/rust-build-package-release-action@v2
+        id: validate
+        with:
+          command: validate-version
+
+      - uses: michaelklishin/rust-build-package-release-action@v2
+        with:
+          command: extract-changelog
+          version: ${{ steps.validate.outputs.version }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release_notes.md
+
+  build-intel-mac:
+    needs: validate
+    runs-on: macos-13
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      # Build for x86_64-apple-darwin (Intel Mac)
+      - uses: michaelklishin/rust-build-package-release-action@v2
+        id: build
+        with:
+          command: release
+          target: x86_64-apple-darwin
+          archive: 'true'
+          locked: 'true'
+          checksum: 'sha256,sha512'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: x86_64-apple-darwin
+          path: |
+            ${{ steps.build.outputs.bare_artifact_path }}
+            ${{ steps.build.outputs.bare_artifact_path }}.sha256
+            ${{ steps.build.outputs.artifact_path }}
+            ${{ steps.build.outputs.artifact_path }}.sha256
+            ${{ steps.build.outputs.artifact_path }}.sha512
+
+  build-arm64-mac:
+    needs: validate
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+
+      # Build for aarch64-apple-darwin (Apple Silicon)
+      - uses: michaelklishin/rust-build-package-release-action@v2
+        id: build
+        with:
+          command: release
+          target: aarch64-apple-darwin
+          archive: 'true'
+          locked: 'true'
+          checksum: 'sha256,sha512'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aarch64-apple-darwin
+          path: |
+            ${{ steps.build.outputs.bare_artifact_path }}
+            ${{ steps.build.outputs.bare_artifact_path }}.sha256
+            ${{ steps.build.outputs.artifact_path }}
+            ${{ steps.build.outputs.artifact_path }}.sha256
+            ${{ steps.build.outputs.artifact_path }}.sha512
+
+  release:
+    needs: [validate, build-intel-mac, build-arm64-mac]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect files
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.sha256" -o -name "*.sha512" \) -exec cp {} release/ \;
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: artifacts/release-notes/release_notes.md
+          files: release/*
+
+  # Optional: generate Homebrew formula with support for both architectures
+  homebrew:
+    needs: [validate, release]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p assets
+          gh release download v${{ needs.validate.outputs.version }} \
+            --pattern "*.tar.gz" \
+            --pattern "*.sha256" \
+            --dir assets
+
+      - name: Extract checksums
+        id: checksums
+        run: |
+          echo "intel_sha256=$(grep x86_64-apple-darwin assets/*.sha256 | head -1 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          echo "arm64_sha256=$(grep aarch64-apple-darwin assets/*.sha256 | head -1 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
+      - uses: michaelklishin/rust-build-package-release-action@v2
+        with:
+          command: generate-homebrew
+          version: ${{ needs.validate.outputs.version }}
+          pkg-description: 'A command-line tool'
+          pkg-homepage: https://github.com/${{ github.repository }}
+          pkg-license: 'MIT'
+          brew-macos-x64-url: https://github.com/${{ github.repository }}/releases/download/v${{ needs.validate.outputs.version }}/myapp-${{ needs.validate.outputs.version }}-x86_64-apple-darwin.tar.gz
+          brew-macos-x64-sha256: ${{ steps.checksums.outputs.intel_sha256 }}
+          brew-macos-arm64-url: https://github.com/${{ github.repository }}/releases/download/v${{ needs.validate.outputs.version }}/myapp-${{ needs.validate.outputs.version }}-aarch64-apple-darwin.tar.gz
+          brew-macos-arm64-sha256: ${{ steps.checksums.outputs.arm64_sha256 }}
+
+      - name: Upload Homebrew formula
+        uses: actions/upload-artifact@v4
+        with:
+          name: homebrew-formula
+          path: target/homebrew/
