@@ -142,6 +142,7 @@ unsafe fn map_input_env_vars_inner() {
         ("INPUT_SBOM_FORMAT", "SBOM_FORMAT"),
         ("INPUT_SBOM_DIR", "SBOM_OUTPUT_DIR"),
         ("INPUT_BREW_CLASS", "HOMEBREW_FORMULA_CLASS"),
+        ("INPUT_BREW_COPYRIGHT", "HOMEBREW_COPYRIGHT"),
         ("INPUT_BREW_MACOS_ARM64_URL", "HOMEBREW_MACOS_ARM64_URL"),
         (
             "INPUT_BREW_MACOS_ARM64_SHA256",

@@ -34,6 +34,7 @@ fn formula_all_platforms() {
         description: "A great tool".into(),
         homepage: "https://example.com".into(),
         license: "MIT".into(),
+        copyright: String::new(),
         macos_arm64_url: "https://example.com/macos-arm64.tar.gz".into(),
         macos_arm64_sha256: "abc123".into(),
         macos_x64_url: "https://example.com/macos-x64.tar.gz".into(),
@@ -53,10 +54,62 @@ fn formula_all_platforms() {
     assert!(formula.contains("license \"MIT\""));
     assert!(formula.contains("on_macos do"));
     assert!(formula.contains("on_linux do"));
-    assert!(formula.contains("Hardware::CPU.arm?"));
+    assert!(formula.contains("on_arm do"));
+    assert!(formula.contains("on_intel do"));
+    assert!(!formula.contains("Hardware::CPU.arm?"));
     assert!(formula.contains("bin.install \"my-tool\""));
     assert!(formula.contains("system \"#{bin}/my-tool\", \"--version\""));
     assert!(formula.ends_with("end\n"));
+}
+
+#[test]
+fn formula_dual_license() {
+    let config = FormulaConfig {
+        class: "Tool".into(),
+        binary_name: "tool".into(),
+        version: "1.0.0".into(),
+        description: "desc".into(),
+        homepage: String::new(),
+        license: "Apache-2.0 OR MIT".into(),
+        copyright: String::new(),
+        macos_arm64_url: String::new(),
+        macos_arm64_sha256: String::new(),
+        macos_x64_url: String::new(),
+        macos_x64_sha256: String::new(),
+        linux_arm64_url: String::new(),
+        linux_arm64_sha256: String::new(),
+        linux_x64_url: String::new(),
+        linux_x64_sha256: String::new(),
+    };
+
+    let formula = generate_formula(&config);
+    assert!(formula.contains("license any_of: [\"Apache-2.0\", \"MIT\"]"));
+}
+
+#[test]
+fn formula_with_copyright_header() {
+    let config = FormulaConfig {
+        class: "Tool".into(),
+        binary_name: "tool".into(),
+        version: "1.0.0".into(),
+        description: "desc".into(),
+        homepage: String::new(),
+        license: String::new(),
+        copyright: "2025-2026 Author and Contributors".into(),
+        macos_arm64_url: String::new(),
+        macos_arm64_sha256: String::new(),
+        macos_x64_url: String::new(),
+        macos_x64_sha256: String::new(),
+        linux_arm64_url: String::new(),
+        linux_arm64_sha256: String::new(),
+        linux_x64_url: String::new(),
+        linux_x64_sha256: String::new(),
+    };
+
+    let formula = generate_formula(&config);
+    assert!(formula.starts_with("# MIT License\n"));
+    assert!(formula.contains("# Copyright (c) 2025-2026 Author and Contributors\n"));
+    assert!(formula.contains("# SOFTWARE.\n\nclass Tool < Formula\n"));
 }
 
 #[test]
@@ -68,6 +121,7 @@ fn formula_macos_arm64_only() {
         description: "desc".into(),
         homepage: String::new(),
         license: String::new(),
+        copyright: String::new(),
         macos_arm64_url: "https://example.com/arm64.tar.gz".into(),
         macos_arm64_sha256: "abc123".into(),
         macos_x64_url: String::new(),
@@ -96,6 +150,7 @@ fn formula_linux_x64_only() {
         description: "desc".into(),
         homepage: String::new(),
         license: String::new(),
+        copyright: String::new(),
         macos_arm64_url: String::new(),
         macos_arm64_sha256: String::new(),
         macos_x64_url: String::new(),
@@ -122,6 +177,7 @@ fn formula_no_platforms() {
         description: "desc".into(),
         homepage: String::new(),
         license: String::new(),
+        copyright: String::new(),
         macos_arm64_url: String::new(),
         macos_arm64_sha256: String::new(),
         macos_x64_url: String::new(),

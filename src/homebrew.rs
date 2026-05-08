@@ -21,6 +21,40 @@ pub fn to_class_name(name: &str) -> String {
         .collect()
 }
 
+const MIT_LICENSE_HEADER: &str = "\
+# MIT License
+#
+# Copyright (c) {COPYRIGHT}
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the \"Software\"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+";
+
+fn format_license(license: &str) -> String {
+    if license.contains(" OR ") {
+        let parts: Vec<&str> = license.split(" OR ").map(str::trim).collect();
+        let quoted: Vec<String> = parts.iter().map(|p| format!("\"{p}\"")).collect();
+        format!("any_of: [{}]", quoted.join(", "))
+    } else {
+        format!("\"{license}\"")
+    }
+}
+
 /// Configuration for generating a Homebrew formula.
 pub struct FormulaConfig {
     pub class: String,
@@ -29,6 +63,7 @@ pub struct FormulaConfig {
     pub description: String,
     pub homepage: String,
     pub license: String,
+    pub copyright: String,
     pub macos_arm64_url: String,
     pub macos_arm64_sha256: String,
     pub macos_x64_url: String,
@@ -48,7 +83,14 @@ pub fn generate_formula(config: &FormulaConfig) -> String {
         !config.linux_arm64_url.is_empty() && !config.linux_arm64_sha256.is_empty();
     let has_linux_x64 = !config.linux_x64_url.is_empty() && !config.linux_x64_sha256.is_empty();
 
-    let mut formula = format!("class {} < Formula\n", config.class);
+    let mut formula = String::new();
+
+    if !config.copyright.is_empty() {
+        formula.push_str(&MIT_LICENSE_HEADER.replace("{COPYRIGHT}", &config.copyright));
+        formula.push('\n');
+    }
+
+    formula.push_str(&format!("class {} < Formula\n", config.class));
     formula.push_str(&format!("  desc \"{}\"\n", config.description));
 
     if !config.homepage.is_empty() {
@@ -58,67 +100,45 @@ pub fn generate_formula(config: &FormulaConfig) -> String {
     formula.push_str(&format!("  version \"{}\"\n", config.version));
 
     if !config.license.is_empty() {
-        formula.push_str(&format!("  license \"{}\"\n", config.license));
+        formula.push_str(&format!("  license {}\n", format_license(&config.license)));
     }
 
     formula.push('\n');
 
     // macOS section
     if has_macos_arm64 || has_macos_x64 {
-        if has_macos_arm64 && has_macos_x64 {
-            formula.push_str("  on_macos do\n");
-            formula.push_str("    if Hardware::CPU.arm?\n");
-            formula.push_str(&format!("      url \"{}\"\n", config.macos_arm64_url));
-            formula.push_str(&format!("      sha256 \"{}\"\n", config.macos_arm64_sha256));
-            formula.push_str("    else\n");
-            formula.push_str(&format!("      url \"{}\"\n", config.macos_x64_url));
-            formula.push_str(&format!("      sha256 \"{}\"\n", config.macos_x64_sha256));
-            formula.push_str("    end\n");
-            formula.push_str("  end\n\n");
-        } else if has_macos_arm64 {
-            formula.push_str("  on_macos do\n");
+        formula.push_str("  on_macos do\n");
+        if has_macos_arm64 {
             formula.push_str("    on_arm do\n");
             formula.push_str(&format!("      url \"{}\"\n", config.macos_arm64_url));
             formula.push_str(&format!("      sha256 \"{}\"\n", config.macos_arm64_sha256));
             formula.push_str("    end\n");
-            formula.push_str("  end\n\n");
-        } else {
-            formula.push_str("  on_macos do\n");
+        }
+        if has_macos_x64 {
             formula.push_str("    on_intel do\n");
             formula.push_str(&format!("      url \"{}\"\n", config.macos_x64_url));
             formula.push_str(&format!("      sha256 \"{}\"\n", config.macos_x64_sha256));
             formula.push_str("    end\n");
-            formula.push_str("  end\n\n");
         }
+        formula.push_str("  end\n\n");
     }
 
     // Linux section
     if has_linux_arm64 || has_linux_x64 {
-        if has_linux_arm64 && has_linux_x64 {
-            formula.push_str("  on_linux do\n");
-            formula.push_str("    if Hardware::CPU.arm?\n");
-            formula.push_str(&format!("      url \"{}\"\n", config.linux_arm64_url));
-            formula.push_str(&format!("      sha256 \"{}\"\n", config.linux_arm64_sha256));
-            formula.push_str("    else\n");
-            formula.push_str(&format!("      url \"{}\"\n", config.linux_x64_url));
-            formula.push_str(&format!("      sha256 \"{}\"\n", config.linux_x64_sha256));
-            formula.push_str("    end\n");
-            formula.push_str("  end\n\n");
-        } else if has_linux_arm64 {
-            formula.push_str("  on_linux do\n");
+        formula.push_str("  on_linux do\n");
+        if has_linux_arm64 {
             formula.push_str("    on_arm do\n");
             formula.push_str(&format!("      url \"{}\"\n", config.linux_arm64_url));
             formula.push_str(&format!("      sha256 \"{}\"\n", config.linux_arm64_sha256));
             formula.push_str("    end\n");
-            formula.push_str("  end\n\n");
-        } else {
-            formula.push_str("  on_linux do\n");
+        }
+        if has_linux_x64 {
             formula.push_str("    on_intel do\n");
             formula.push_str(&format!("      url \"{}\"\n", config.linux_x64_url));
             formula.push_str(&format!("      sha256 \"{}\"\n", config.linux_x64_sha256));
             formula.push_str("    end\n");
-            formula.push_str("  end\n\n");
         }
+        formula.push_str("  end\n\n");
     }
 
     formula.push_str("  def install\n");
@@ -161,6 +181,7 @@ pub fn run_generate_homebrew() -> Result<()> {
         description,
         homepage: env_or("PKG_HOMEPAGE", ""),
         license: env_or("PKG_LICENSE", ""),
+        copyright: env_or("HOMEBREW_COPYRIGHT", ""),
         macos_arm64_url: env_or("HOMEBREW_MACOS_ARM64_URL", ""),
         macos_arm64_sha256: env_or("HOMEBREW_MACOS_ARM64_SHA256", ""),
         macos_x64_url: env_or("HOMEBREW_MACOS_X64_URL", ""),
