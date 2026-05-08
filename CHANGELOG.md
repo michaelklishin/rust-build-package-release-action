@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.0.0 (in development)
+
+No changes yet.
+
+
 ## v3.0.0 (May 7, 2026)
 
 ### Changes
