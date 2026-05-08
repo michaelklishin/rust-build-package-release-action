@@ -76,7 +76,6 @@ const MIT_LICENSE_HEADER: &str = "\
 # SOFTWARE.
 ";
 
-/// Generates a Homebrew formula string.
 pub fn generate_formula(config: &FormulaConfig) -> String {
     let has_macos_arm64 =
         !config.macos_arm64_url.is_empty() && !config.macos_arm64_sha256.is_empty();

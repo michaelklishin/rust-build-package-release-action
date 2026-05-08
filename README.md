@@ -363,6 +363,7 @@ For `generate-homebrew` command. SHA256 values come from build step outputs.
 | Input | Description | Default |
 |-------|-------------|---------|
 | `brew-class` | Ruby class name for formula | Auto-generated |
+| `brew-copyright` | Copyright holder for MIT license header (e.g. `2025-2026 Author`) | — |
 | `brew-macos-arm64-url` | macOS ARM64 artifact URL | — |
 | `brew-macos-arm64-sha256` | macOS ARM64 SHA256 | — |
 | `brew-macos-x64-url` | macOS x64 artifact URL | — |

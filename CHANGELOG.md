@@ -1,8 +1,14 @@
 # Changelog
 
-## v3.0.0 (in development)
+## v3.0.0 (May 7, 2026)
 
-No changes yet.
+### Changes
+
+ * New `brew-copyright` input: generated Homebrew formulas include an MIT license header
+ * Generated Homebrew formulas use `any_of: [...]` for dual licenses (e.g. `Apache-2.0 OR MIT`)
+ * Generated Homebrew formulas use `on_arm do`/`on_intel do` blocks
+ * Intel Mac builds require `macos-15-intel` or `macos-26-intel` (`macos-13` removed Dec 2025)
+ * Bump `actions/checkout` to v6, `softprops/action-gh-release` to 2.6.1
 
 
 ## v2.0.0 (Mar 22, 2026)

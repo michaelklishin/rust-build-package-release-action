@@ -20,7 +20,6 @@ def main [] {
     let license = $env.PKG_LICENSE? | default ""
     let copyright = $env.HOMEBREW_COPYRIGHT? | default ""
 
-    # Artifact URLs and checksums
     let macos_arm64_url = $env.HOMEBREW_MACOS_ARM64_URL? | default ""
     let macos_arm64_sha256 = $env.HOMEBREW_MACOS_ARM64_SHA256? | default ""
     let macos_x64_url = $env.HOMEBREW_MACOS_X64_URL? | default ""
@@ -138,7 +137,6 @@ export def generate-formula [config: record]: nothing -> string {
 
     $formula = $formula + "\n"
 
-    # Platform-specific URLs
     if $has_macos_arm64 or $has_macos_x64 {
         $formula = $formula + "  on_macos do\n"
         if $has_macos_arm64 {
