@@ -184,6 +184,9 @@ inputs:
   brew-class:
     description: 'Ruby class name for formula (auto-generated from binary name)'
     required: false
+  brew-copyright:
+    description: 'Copyright holder for MIT license header (e.g. "2025-2026 Author and Contributors")'
+    required: false
   brew-macos-arm64-url:
     description: 'Download URL for macOS ARM64 artifact'
     required: false
@@ -207,9 +210,6 @@ inputs:
     required: false
   brew-linux-x64-sha256:
     description: 'SHA256 checksum for Linux x64 artifact'
-    required: false
-  brew-copyright:
-    description: 'Copyright holder for MIT license header (e.g. "2025-2026 Author and Contributors")'
     required: false
   brew-dir:
     description: 'Output directory for formula file'

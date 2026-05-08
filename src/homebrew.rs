@@ -21,6 +21,37 @@ pub fn to_class_name(name: &str) -> String {
         .collect()
 }
 
+/// Configuration for generating a Homebrew formula.
+pub struct FormulaConfig {
+    pub class: String,
+    pub binary_name: String,
+    pub version: String,
+    pub description: String,
+    pub homepage: String,
+    pub license: String,
+    pub copyright: String,
+    pub macos_arm64_url: String,
+    pub macos_arm64_sha256: String,
+    pub macos_x64_url: String,
+    pub macos_x64_sha256: String,
+    pub linux_arm64_url: String,
+    pub linux_arm64_sha256: String,
+    pub linux_x64_url: String,
+    pub linux_x64_sha256: String,
+}
+
+fn format_license(license: &str) -> String {
+    if license.contains(" OR ") {
+        let quoted: Vec<String> = license
+            .split(" OR ")
+            .map(|p| format!("\"{}\"", p.trim()))
+            .collect();
+        format!("any_of: [{}]", quoted.join(", "))
+    } else {
+        format!("\"{license}\"")
+    }
+}
+
 const MIT_LICENSE_HEADER: &str = "\
 # MIT License
 #
@@ -44,35 +75,6 @@ const MIT_LICENSE_HEADER: &str = "\
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ";
-
-fn format_license(license: &str) -> String {
-    if license.contains(" OR ") {
-        let parts: Vec<&str> = license.split(" OR ").map(str::trim).collect();
-        let quoted: Vec<String> = parts.iter().map(|p| format!("\"{p}\"")).collect();
-        format!("any_of: [{}]", quoted.join(", "))
-    } else {
-        format!("\"{license}\"")
-    }
-}
-
-/// Configuration for generating a Homebrew formula.
-pub struct FormulaConfig {
-    pub class: String,
-    pub binary_name: String,
-    pub version: String,
-    pub description: String,
-    pub homepage: String,
-    pub license: String,
-    pub copyright: String,
-    pub macos_arm64_url: String,
-    pub macos_arm64_sha256: String,
-    pub macos_x64_url: String,
-    pub macos_x64_sha256: String,
-    pub linux_arm64_url: String,
-    pub linux_arm64_sha256: String,
-    pub linux_x64_url: String,
-    pub linux_x64_sha256: String,
-}
 
 /// Generates a Homebrew formula string.
 pub fn generate_formula(config: &FormulaConfig) -> String {

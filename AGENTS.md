@@ -65,7 +65,7 @@ For verifying YAML file syntax, use `yq`, Ruby or Python YAML modules (whichever
 
 Building macOS binaries requires a native runner:
 
- * **Intel Mac (`x86_64-apple-darwin`)**: use `macos-13` or older runners for native compilation
+ * **Intel Mac (`x86_64-apple-darwin`)**: use `macos-15-intel` or `macos-26-intel` runners (`macos-13` was removed in December 2025)
  * **Apple Silicon (`aarch64-apple-darwin`)**: use `macos-14` or newer runners for native compilation
  * Building for Intel on Apple Silicon runners is technically possible but not recommended (cross-compilation adds complexity)
  * Each architecture needs a separate build job with its corresponding runner

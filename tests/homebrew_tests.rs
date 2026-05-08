@@ -48,6 +48,7 @@ fn formula_all_platforms() {
     let formula = generate_formula(&config);
 
     assert!(formula.starts_with("class MyTool < Formula\n"));
+    assert!(!formula.contains("# MIT License"));
     assert!(formula.contains("desc \"A great tool\""));
     assert!(formula.contains("homepage \"https://example.com\""));
     assert!(formula.contains("version \"1.0.0\""));
@@ -136,6 +137,7 @@ fn formula_macos_arm64_only() {
 
     assert!(formula.contains("on_macos do"));
     assert!(formula.contains("on_arm do"));
+    assert!(!formula.contains("on_intel do"));
     assert!(!formula.contains("on_linux do"));
     assert!(!formula.contains("homepage"));
     assert!(!formula.contains("license"));
@@ -166,6 +168,7 @@ fn formula_linux_x64_only() {
     assert!(!formula.contains("on_macos do"));
     assert!(formula.contains("on_linux do"));
     assert!(formula.contains("on_intel do"));
+    assert!(!formula.contains("on_arm do"));
 }
 
 #[test]

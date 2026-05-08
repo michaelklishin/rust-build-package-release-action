@@ -703,14 +703,14 @@ This action supports both Intel and Apple Silicon Macs. Each architecture requir
 
 | Target | Runner | Hardware | Rust Toolchain |
 |--------|--------|----------|-----------------|
-| `x86_64-apple-darwin` | `macos-13` or older | Intel Mac | Native (installed via rustup) |
+| `x86_64-apple-darwin` | `macos-15-intel` or `macos-26-intel` | Intel Mac | Native (installed via rustup) |
 | `aarch64-apple-darwin` | `macos-14` or newer | Apple Silicon (M1/M2/M3+) | Native (installed via rustup) |
 
 ### Why Separate Runners?
 
 Apple Silicon runners can cross-compile to Intel targets, but building the **native** binary on the target architecture is more reliable for certification and performance. GitHub Actions provides:
 
-- `macos-13`: Intel hardware
+- `macos-15-intel` / `macos-26-intel`: Intel hardware (`macos-13` was removed in December 2025)
 - `macos-14` and newer: Apple Silicon hardware
 
 ### Building for Intel Macs
@@ -724,7 +724,7 @@ Apple Silicon runners can cross-compile to Intel targets, but building the **nat
     locked: 'true'
 ```
 
-Run this on `macos-13` for native Intel compilation.
+Run this on `macos-15-intel` for native Intel compilation.
 
 ### Building for Both Architectures
 
@@ -737,7 +737,7 @@ build:
     matrix:
       include:
         - target: x86_64-apple-darwin
-          os: macos-13
+          os: macos-15-intel
         - target: aarch64-apple-darwin
           os: macos-14
   steps:
