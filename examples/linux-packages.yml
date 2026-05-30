@@ -16,8 +16,8 @@ jobs:
     outputs:
       version: ${{ steps.validate.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: actions/checkout@v6
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: validate
         with:
           command: validate-version
@@ -49,10 +49,10 @@ jobs:
             command: release-linux-apk
             target: aarch64-unknown-linux-musl
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: rustup toolchain install stable --profile minimal
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: build
         with:
           command: ${{ matrix.command }}
@@ -73,9 +73,9 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: extract-changelog
           version: ${{ needs.validate.outputs.version }}
@@ -89,7 +89,7 @@ jobs:
           mkdir -p release
           find artifacts -type f \( -name "*.deb" -o -name "*.rpm" -o -name "*.apk" \) -exec cp {} release/ \;
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2.6.1
         with:
           body_path: release_notes.md
           files: release/*

@@ -14,20 +14,20 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: rustup toolchain install stable --profile minimal
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: validate
         with:
           command: validate-version
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: extract-changelog
           version: ${{ steps.validate.outputs.version }}
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: build
         with:
           command: release-linux
@@ -35,7 +35,7 @@ jobs:
           archive: 'true'
           locked: 'true'
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2.6.1
         with:
           body_path: release_notes.md
           files: |

@@ -16,14 +16,14 @@ jobs:
     outputs:
       version: ${{ steps.validate.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: validate
         with:
           command: validate-version
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: extract-changelog
           version: ${{ steps.validate.outputs.version }}
@@ -52,11 +52,11 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: rustup toolchain install stable --profile minimal
 
       # The unified `release` command auto-selects the platform script from target
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: build
         with:
           command: release
@@ -90,7 +90,7 @@ jobs:
           mkdir -p release
           find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" -o -name "*.sha512" \) -exec cp {} release/ \;
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2.6.1
         with:
           body_path: artifacts/release-notes/release_notes.md
           files: release/*

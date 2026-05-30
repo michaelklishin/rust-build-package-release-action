@@ -3,6 +3,11 @@
 # For library-only crates that don't produce binaries.
 # Uses OIDC-based Trusted Publishing (no stored API tokens).
 #
+# This workflow includes:
+#   - a dry-run job that runs on every push/PR to catch packaging issues early
+#   - a publish job that runs on version tags
+#   - an optional GitHub Release job that posts the changelog entry for the tag
+#
 # Prerequisites:
 #   1. Create a GitHub Actions environment named "release" (Settings > Environments)
 #   2. Register a Trusted Publisher on crates.io (crate settings > Trusted Publishing)
@@ -12,27 +17,52 @@ name: Release
 
 on:
   push:
+    branches: [main]
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
-  id-token: write    # Required for crates.io Trusted Publishing OIDC token exchange
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Validate packaging on every push and PR without publishing
+  dry-run:
+    if: github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/')
+    name: Dry-run packaging
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: michaelklishin/rust-build-package-release-action@v3
+        with:
+          command: publish-crate
+          publish-dry-run: 'true'
+          locked: 'true'
+
   publish:
+    if: startsWith(github.ref, 'refs/tags/')
     name: Publish to crates.io
     runs-on: ubuntu-22.04
     environment: release
     timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write    # Required for crates.io Trusted Publishing OIDC token exchange
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
+        id: validate
         with:
           command: validate-version
           validate-cargo-toml: 'true'
@@ -41,9 +71,30 @@ jobs:
         id: auth
         uses: rust-lang/crates-io-auth-action@v1
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: publish-crate
           locked: 'true'
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+
+  # Optional: post the changelog entry as a GitHub Release for the tag
+  github-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: publish
+    name: GitHub Release
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: michaelklishin/rust-build-package-release-action@v3
+        with:
+          command: extract-changelog
+          version: ${{ needs.publish.outputs.version }}
+
+      - uses: softprops/action-gh-release@v2.6.1
+        with:
+          body_path: release_notes.md

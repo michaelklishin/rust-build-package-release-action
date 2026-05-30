@@ -20,7 +20,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
             runner: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -28,7 +28,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build Debian package
-        uses: michaelklishin/rust-build-package-release-action@v1
+        uses: michaelklishin/rust-build-package-release-action@v3
         id: build
         with:
           command: release-linux-deb
@@ -38,7 +38,7 @@ jobs:
           pkg-description: 'My application'
 
       - name: Test Debian package
-        uses: michaelklishin/rust-build-package-release-action@v1
+        uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: test-deb
           artifact: ${{ steps.build.outputs.artifact_path }}
@@ -67,7 +67,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
             runner: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -75,7 +75,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build RPM
-        uses: michaelklishin/rust-build-package-release-action@v1
+        uses: michaelklishin/rust-build-package-release-action@v3
         id: build
         with:
           command: release-linux-rpm
@@ -85,7 +85,7 @@ jobs:
           pkg-description: 'My application'
 
       - name: Test RPM
-        uses: michaelklishin/rust-build-package-release-action@v1
+        uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: test-rpm
           artifact: ${{ steps.build.outputs.artifact_path }}
@@ -105,13 +105,13 @@ jobs:
     name: Windows MSI
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build archive
-        uses: michaelklishin/rust-build-package-release-action@v1
+        uses: michaelklishin/rust-build-package-release-action@v3
         id: archive
         with:
           command: release-windows
@@ -120,7 +120,7 @@ jobs:
           archive: 'true'
 
       - name: Build MSI
-        uses: michaelklishin/rust-build-package-release-action@v1
+        uses: michaelklishin/rust-build-package-release-action@v3
         id: msi
         with:
           command: release-windows-msi
@@ -128,7 +128,7 @@ jobs:
           binary-name: myapp
 
       - name: Test Windows artifacts
-        uses: michaelklishin/rust-build-package-release-action@v1
+        uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: test-windows
           binary-path: ${{ steps.archive.outputs.binary_path }}

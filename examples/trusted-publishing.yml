@@ -29,15 +29,15 @@ jobs:
     outputs:
       version: ${{ steps.validate.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: validate
         with:
           command: validate-version
           validate-cargo-toml: 'true'
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: extract-changelog
           version: ${{ steps.validate.outputs.version }}
@@ -54,14 +54,14 @@ jobs:
     environment: release
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Authenticate with crates.io
         id: auth
         uses: rust-lang/crates-io-auth-action@v1
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: publish-crate
           locked: 'true'
@@ -79,10 +79,10 @@ jobs:
           - x86_64-unknown-linux-gnu
           - aarch64-unknown-linux-gnu
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: rustup toolchain install stable --profile minimal
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: build
         with:
           command: release-linux
@@ -106,10 +106,10 @@ jobs:
       matrix:
         target: [aarch64-apple-darwin, x86_64-apple-darwin]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: rustup toolchain install stable --profile minimal
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: build
         with:
           command: release-macos
@@ -129,7 +129,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/download-artifact@v4
         with:
@@ -141,14 +141,14 @@ jobs:
           find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" \) -exec cp {} release/ \;
           cp artifacts/release-notes/release_notes.md .
 
-      - uses: michaelklishin/rust-build-package-release-action@v1
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: format
         with:
           command: format-release
           version: ${{ needs.validate.outputs.version }}
           artifacts-dir: release
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2.6.1
         with:
           body: ${{ steps.format.outputs.body }}
           files: release/*

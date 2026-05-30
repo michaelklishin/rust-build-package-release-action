@@ -17,14 +17,14 @@ jobs:
     outputs:
       version: ${{ steps.validate.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: michaelklishin/rust-build-package-release-action@v2
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: validate
         with:
           command: validate-version
 
-      - uses: michaelklishin/rust-build-package-release-action@v2
+      - uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: extract-changelog
           version: ${{ steps.validate.outputs.version }}
@@ -39,11 +39,11 @@ jobs:
     runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: rustup toolchain install stable --profile minimal
 
       # Build for x86_64-apple-darwin (Intel Mac)
-      - uses: michaelklishin/rust-build-package-release-action@v2
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: build
         with:
           command: release
@@ -67,11 +67,11 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: rustup toolchain install stable --profile minimal
 
       # Build for aarch64-apple-darwin (Apple Silicon)
-      - uses: michaelklishin/rust-build-package-release-action@v2
+      - uses: michaelklishin/rust-build-package-release-action@v3
         id: build
         with:
           command: release
@@ -104,7 +104,7 @@ jobs:
           mkdir -p release
           find artifacts -type f \( -name "*.tar.gz" -o -name "*.sha256" -o -name "*.sha512" \) -exec cp {} release/ \;
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2.6.1
         with:
           body_path: artifacts/release-notes/release_notes.md
           files: release/*
@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download release assets
         env:
@@ -133,13 +133,15 @@ jobs:
           echo "intel_sha256=$(grep x86_64-apple-darwin assets/*.sha256 | head -1 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
           echo "arm64_sha256=$(grep aarch64-apple-darwin assets/*.sha256 | head -1 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
-      - uses: michaelklishin/rust-build-package-release-action@v2
+      - uses: michaelklishin/rust-build-package-release-action@v3
         with:
           command: generate-homebrew
           version: ${{ needs.validate.outputs.version }}
           pkg-description: 'A command-line tool'
           pkg-homepage: https://github.com/${{ github.repository }}
           pkg-license: 'MIT'
+          # Optional: adds an MIT license header to the generated formula (v3+)
+          brew-copyright: '2025-2026 Your Name and Contributors'
           brew-macos-x64-url: https://github.com/${{ github.repository }}/releases/download/v${{ needs.validate.outputs.version }}/myapp-${{ needs.validate.outputs.version }}-x86_64-apple-darwin.tar.gz
           brew-macos-x64-sha256: ${{ steps.checksums.outputs.intel_sha256 }}
           brew-macos-arm64-url: https://github.com/${{ github.repository }}/releases/download/v${{ needs.validate.outputs.version }}/myapp-${{ needs.validate.outputs.version }}-aarch64-apple-darwin.tar.gz
