@@ -1,4 +1,4 @@
-use rust_release_action::publish::build_publish_args;
+use rust_release_action::publish::{build_publish_args, is_version_tag};
 use std::sync::{LazyLock, Mutex};
 
 static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
@@ -156,4 +156,32 @@ fn publish_args_locked_false_is_ignored() {
     unsafe { std::env::set_var("LOCKED", "false") };
 
     assert_eq!(build_publish_args(false), vec!["publish"]);
+}
+
+#[test]
+fn is_version_tag_accepts_well_formed_tags() {
+    assert!(is_version_tag("v1.2.3"));
+    assert!(is_version_tag("v0.12.0"));
+    assert!(is_version_tag("v10.20.30"));
+    assert!(is_version_tag("v1.2.3-rc.1"));
+    assert!(is_version_tag("v1.2.3-alpha.2"));
+    assert!(is_version_tag("v1.2.3+build.42"));
+}
+
+#[test]
+fn is_version_tag_rejects_pr_and_branch_refs() {
+    assert!(!is_version_tag("14/merge"));
+    assert!(!is_version_tag("123/merge"));
+    assert!(!is_version_tag("main"));
+    assert!(!is_version_tag("dependabot/cargo/foo-1.0.0"));
+}
+
+#[test]
+fn is_version_tag_rejects_empty_and_malformed() {
+    assert!(!is_version_tag(""));
+    assert!(!is_version_tag("v"));
+    assert!(!is_version_tag("1.2.3"));
+    assert!(!is_version_tag("vfoo"));
+    assert!(!is_version_tag("v1.2"));
+    assert!(!is_version_tag("v1"));
 }

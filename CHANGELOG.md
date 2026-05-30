@@ -2,7 +2,9 @@
 
 ## v4.0.0 (in development)
 
-No changes yet.
+### Bug Fixes
+
+ * `publish-crate` with `publish-dry-run: true` now works on PRs and branch pushes. Previously it tried to validate the ref as a version tag and failed on refs like `14/merge`
 
 
 ## v3.0.0 (May 7, 2026)

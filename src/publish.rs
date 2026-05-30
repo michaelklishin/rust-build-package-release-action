@@ -46,6 +46,18 @@ pub fn build_publish_args(dry_run: bool) -> Vec<String> {
     args
 }
 
+/// Returns true if the given ref name looks like a release tag (e.g. `v1.2.3`).
+///
+/// Used to distinguish tag pushes from PR/branch refs (e.g. `14/merge`, `main`)
+/// so that `publish-crate --publish-dry-run` can run as a pure packaging check
+/// on PRs where no version tag exists.
+pub fn is_version_tag(reference: &str) -> bool {
+    match version_from_tag(reference) {
+        Some(version) => is_valid_semver(version),
+        None => false,
+    }
+}
+
 /// Validate that the tag version matches Cargo.toml before publishing.
 fn validate_version_for_publish() -> Result<String> {
     let tag = env_or("TAG", &env_or("GITHUB_REF_NAME", ""));
@@ -138,7 +150,14 @@ pub fn run_publish_crate() -> Result<()> {
     print_hr();
 
     tools::check_rust_toolchain()?;
-    let version = validate_version_for_publish()?;
+
+    let reference = env_or("TAG", &env_or("GITHUB_REF_NAME", ""));
+    let version = if dry_run && !is_version_tag(&reference) {
+        println!("\x1b[32mDry run without a version tag — skipping version validation\x1b[0m");
+        String::new()
+    } else {
+        validate_version_for_publish()?
+    };
 
     if !dry_run {
         check_registry_token()?;
