@@ -82,16 +82,39 @@ For workflows, use a matrix strategy to build both in parallel. See `examples/ma
  * Use `LazyLock<Mutex<()>>` to serialise tests that modify process-wide state (env vars, CWD)
  * Mark `env::set_var` and `env::remove_var` calls as `unsafe` with a safety comment
  * Format with `cargo fmt --all`, lint with `cargo clippy --all-features --all`
- * Only add important comments
 
 ## Git Conventions
 
  * Never add yourself to commit co-authors list
  * Never mention yourself in commit messages
 
-## Markdown Style
+## Comments, Writing Style and Voice
+
+Only add very important comments to the tests and the implementation.
+
+### Voice
+
+Write like an engineer who values clarity and simplicity. This applies
+to all prose: design docs, analyses, notes, and commit messages.
+
+ * Plain and factual: state the why in one line, never narrate the what
+ * Literal mechanism over metaphor: name the actual thing, not an image of it
+ * Prefer the plainest word. No coined verbs, no jargon for its own sake
+ * No flourish, no editorializing, no imagery. Real domain terms are fine
+ * If a sentence needs a second clause to justify itself, it is probably too clever
+
+### Writing and Markdown Style
 
  * Never add full stops to Markdown list items
+ * Use "X and Y" in prose, not "X / Y" slash-shorthand. Exceptions: unit
+   fractions (`bytes/sec`), single-concept abbreviations (`I/O`), and paths
+   or code (`tests/unit/`, `src/lib.rs`)
+ * Wrap code identifiers in backticks in prose: types like `Vec<T>`, traits
+   like `Display`, functions like `Iterator::next`, modules, file names, and paths
+ * Avoid robotic labels such as `**Thing / other:**`; write a plain sentence or a simple label
+ * Match the existing conventions of the file and subdirectory you are
+   editing — bullet character, heading depth, ID schemes, and table shape
+   vary by project, and the local choice wins
 
 ## Releases
 
@@ -123,12 +146,14 @@ on the remote and must be moved forward.
  * The floating major tag (e.g. `v2`) is what consumers reference in their workflows
  * The precise tag (e.g. `v2.0.0`) is for changelog traceability
 
-## Reviews
+## Iterative Post-Implementation Review (IPIR)
 
-Perform up to twenty iterative reviews after completing a task. Look for:
+Review the changes very carefully and holistically for correctness and safety,
+opportunities to meaningfully simplify the implementation without losing
+fidelity and effectiveness, the use of Rust idioms, the rich type system
+patterns, meaningful test coverage, API usability and whether the changes are
+worth adopting to begin with.
 
- * Meaningful improvements
- * Test coverage gaps
- * Deviations from the instructions in `AGENTS.md`
+Look hard for ways to meaningfully improve both the tests and the implementation.
 
-Stop iterating when three iterations in a row show no meaningful improvements.
+Perform 5 such iterations (holistic analysis runs).
