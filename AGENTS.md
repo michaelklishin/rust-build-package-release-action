@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-`rust-build-package-release-action` is an **opinionated** GitHub Action that automates release workflows for Rust projects,
+`rust-build-package-release-action` is an opinionated GitHub Action that automates release workflows for Rust projects,
 built as a single Rust binary crate with clap subcommands (edition 2024, rust-version 1.85).
 
 This is a conventions-based, opinionated release process extracted from:
@@ -65,8 +65,8 @@ For verifying YAML file syntax, use `yq`, Ruby or Python YAML modules (whichever
 
 Building macOS binaries requires a native runner:
 
- * **Intel Mac (`x86_64-apple-darwin`)**: use `macos-15-intel` or `macos-26-intel` runners (`macos-13` was removed in December 2025)
- * **Apple Silicon (`aarch64-apple-darwin`)**: use `macos-14` or newer runners for native compilation
+ * Intel Mac (`x86_64-apple-darwin`): use `macos-15-intel` or `macos-26-intel` runners (`macos-13` was removed in December 2025)
+ * Apple Silicon (`aarch64-apple-darwin`): use `macos-14` or newer runners for native compilation
  * Building for Intel on Apple Silicon runners is technically possible but not recommended (cross-compilation adds complexity)
  * Each architecture needs a separate build job with its corresponding runner
  * The action generates Homebrew formulas that auto-select the correct binary per architecture
@@ -102,6 +102,16 @@ to all prose: design docs, analyses, notes, and commit messages.
  * Prefer the plainest word. No coined verbs, no jargon for its own sake
  * No flourish, no editorializing, no imagery. Real domain terms are fine
  * If a sentence needs a second clause to justify itself, it is probably too clever
+ * Plain full sentences over compressed clever noun phrases: "a helper
+   crate", not "a `tower`-shaped convenience"
+ * State guarantees and behavior explicitly; do not leave them implied
+   by jargon
+ * Name tools and platforms precisely: `rustc` 1.92, edition 2024,
+   crates.io, WebAssembly
+ * No bold for emphasis; bold is for structural labels only, and sparingly
+ * No "term — explanation" em-dash glosses: use ": " or parentheses
+ * These vocabulary rules apply to identifiers too: test function names,
+   helper modules, and fixture names use the same plain words as prose
 
 ### Writing and Markdown Style
 
@@ -113,14 +123,14 @@ to all prose: design docs, analyses, notes, and commit messages.
    like `Display`, functions like `Iterator::next`, modules, file names, and paths
  * Avoid robotic labels such as `**Thing / other:**`; write a plain sentence or a simple label
  * Match the existing conventions of the file and subdirectory you are
-   editing — bullet character, heading depth, ID schemes, and table shape
+   editing: bullet character, heading depth, ID schemes, and table shape
    vary by project, and the local choice wins
 
 ## Releases
 
 ### How to Roll (Produce) a New Major Release
 
-GitHub Actions use **major version tags** (`@v1`, `@v2`, `@v3`) as their public API.
+GitHub Actions use major version tags (`@v1`, `@v2`, `@v3`) as their public API.
 Consumers pin to `@vN` and automatically receive all non-breaking updates.
 
 Suppose the current development version in `Cargo.toml` is `N.0.0` and `CHANGELOG.md` has
@@ -142,7 +152,7 @@ on the remote and must be moved forward.
 
 ### Notes
 
- * This crate is `publish = false` — there is no crates.io publishing step
+ * This crate is `publish = false`: there is no crates.io publishing step
  * The floating major tag (e.g. `v2`) is what consumers reference in their workflows
  * The precise tag (e.g. `v2.0.0`) is for changelog traceability
 
