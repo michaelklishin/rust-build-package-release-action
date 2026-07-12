@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.1.0 (in development)
+## v3.1.0 (Jul 11, 2026)
 
 ### Bug Fixes
 
