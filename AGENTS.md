@@ -83,11 +83,12 @@ For workflows, use a matrix strategy to build both in parallel. See `examples/ma
  * Mark `env::set_var` and `env::remove_var` calls as `unsafe` with a safety comment
  * Format with `cargo fmt --all`, lint with `cargo clippy --all-features --all`
 
-## Git Conventions
+## Git and GitHub Conventions
 
  * Do not commit changes automatically without an explicit permission to do so
  * Never add yourself to commit co-authors list
  * Never mention yourself in commit messages
+ * If a `gh` operation fails with an authentication failure, unset `GITHUB_TOKEN` and retry
 
 ## Comments, Writing Style and Voice
 
