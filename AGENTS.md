@@ -85,6 +85,7 @@ For workflows, use a matrix strategy to build both in parallel. See `examples/ma
 
 ## Git Conventions
 
+ * Do not commit changes automatically without an explicit permission to do so
  * Never add yourself to commit co-authors list
  * Never mention yourself in commit messages
 
