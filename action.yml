@@ -550,6 +550,8 @@ runs:
         mkdir -p "$(dirname "$bin")"
         curl -fsSL "$base/rust-release-action-$target" -o "$bin"
         chmod +x "$bin"
+        echo "::notice::provisioned $bin ($(stat -c%s "$bin" 2>/dev/null || stat -f%z "$bin") bytes)"
+        ls -la "$bin"
 
     - name: Run command
       id: run
