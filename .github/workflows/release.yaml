@@ -18,6 +18,8 @@ jobs:
     name: Create Release
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       # v6.0.2
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -38,3 +40,42 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
           body_path: release_notes.md
+
+  # Prebuilt musl-static binaries let the action run in toolchain-less containers
+  # (such as those used by `test-deb`, `test-rpm`).
+  #
+  # See the "Provide action binary" step in `action.yml`.
+  action-binaries:
+    name: Action binary (${{ matrix.target }})
+    needs: [release]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-22.04
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-24.04-arm
+    steps:
+      # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Install musl toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq musl-tools
+          rustup target add ${{ matrix.target }}
+
+      # Static link: no libc or linker required in the consumer's container.
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Stage asset
+        run: install -m0755 target/${{ matrix.target }}/release/rust-release-action rust-release-action-${{ matrix.target }}
+
+      # v2.5.0 — appends the binary to the release created above.
+      - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
+        with:
+          tag_name: v${{ needs.release.outputs.version }}
+          files: rust-release-action-${{ matrix.target }}

@@ -1,4 +1,6 @@
 # Verify release artifacts: downloads packages and runs sanity checks across distributions
+# test-deb/test-rpm run inside clean distro containers; the action ships a prebuilt
+# binary, so no Rust toolchain is required in the container
 name: Verify Release Artifacts
 
 on:

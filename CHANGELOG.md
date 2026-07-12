@@ -1,9 +1,12 @@
 # Changelog
 
-## v4.0.0 (in development)
+## v3.1.0 (in development)
 
 ### Bug Fixes
 
+ * `test-deb` and `test-rpm` now work in clean distro containers.
+   The action previously failed with `cargo: command not found` because it always compiled itself from source.
+   It now downloads a prebuilt MUSL-based static binary when no Rust toolchain is present
  * `publish-crate` with `publish-dry-run: true` now works on PRs and branch pushes. Previously it tried to validate the ref as a version tag and failed on refs like `14/merge`
 
 

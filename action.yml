@@ -513,9 +513,43 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Build action binary
+    # The action is a Rust binary. Build from source when a toolchain is present;
+    # otherwise (e.g. test-deb/test-rpm in a clean distro container with no cargo)
+    # download the prebuilt musl-static binary that release.yaml ships per release.
+    - name: Provide action binary
       shell: bash
-      run: cargo build --release --manifest-path "${{ github.action_path }}/Cargo.toml"
+      # Contexts passed via env (not interpolated into the script) per GitHub
+      # script-injection hardening guidance.
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        ACTION_REF: ${{ github.action_ref }}
+        ACTION_REPO: ${{ github.action_repository }}
+      run: |
+        set -euo pipefail
+        if command -v cargo >/dev/null 2>&1; then
+          cargo build --release --manifest-path "$ACTION_PATH/Cargo.toml"
+          exit 0
+        fi
+        case "$(uname -m)" in
+          x86_64|amd64)  target="x86_64-unknown-linux-musl" ;;
+          aarch64|arm64) target="aarch64-unknown-linux-musl" ;;
+          *) echo "::error::no cargo and no prebuilt binary for $(uname -m)"; exit 1 ;;
+        esac
+        # Minimal base images ship without curl (mirrors download.rs::ensure_curl).
+        if ! command -v curl >/dev/null 2>&1; then
+          (apt-get update -qq && apt-get install -y -qq curl) \
+            || dnf install -y -q curl || microdnf install -y curl
+        fi
+        # Precise version pins fetch that release; floating major/SHA pins fetch latest.
+        if [[ "$ACTION_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+          base="https://github.com/$ACTION_REPO/releases/download/$ACTION_REF"
+        else
+          base="https://github.com/$ACTION_REPO/releases/latest/download"
+        fi
+        bin="$ACTION_PATH/target/release/rust-release-action"
+        mkdir -p "$(dirname "$bin")"
+        curl -fsSL "$base/rust-release-action-$target" -o "$bin"
+        chmod +x "$bin"
 
     - name: Run command
       id: run
