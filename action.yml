@@ -550,16 +550,16 @@ runs:
         mkdir -p "$(dirname "$bin")"
         curl -fsSL "$base/rust-release-action-$target" -o "$bin"
         chmod +x "$bin"
-        echo "::notice::provisioned $bin ($(stat -c%s "$bin" 2>/dev/null || stat -f%z "$bin") bytes)"
-        ls -la "$bin"
 
     - name: Run command
       id: run
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        "${{ github.action_path }}/target/release/rust-release-action" "${{ inputs.command }}"
+        "$ACTION_PATH/target/release/rust-release-action" "$INPUT_COMMAND"
       env:
+        # Passed via env so it resolves to the same path as in "Provide action binary".
+        ACTION_PATH: ${{ github.action_path }}
         # All inputs passed as INPUT_* environment variables
         INPUT_COMMAND: ${{ inputs.command }}
         INPUT_VERSION: ${{ inputs.version }}
